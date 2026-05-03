@@ -17,18 +17,16 @@
 <body>
 <div id="root"><div style="text-align:center;padding:80px 20px;color:#6B7A99;font-family:system-ui">Loading UCC Pasay Music Team Hub…</div></div>
 
-<!-- Load all external scripts first, synchronously -->
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-<!-- App — runs after all scripts above are loaded -->
 <script type="text/babel">
 const { useState, useEffect } = React;
 
-// ── Firebase init (all external scripts loaded at this point) ──
+// ── Firebase ───────────────────────────────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyDEfvJ9mRoKIJEknmZfEo0w1ESp9sTLPQ4",
   authDomain: "ucc-pasay-music-team-hub.firebaseapp.com",
@@ -38,19 +36,13 @@ const firebaseConfig = {
   messagingSenderId: "708266011081",
   appId: "1:708266011081:web:201e7d40c191624b9e6018"
 };
-
 let db = null;
-try {
-  const app = firebase.initializeApp(firebaseConfig);
-  db = firebase.database(app);
-} catch(e) {
-  console.error("Firebase init failed:", e);
-}
+try { const app = firebase.initializeApp(firebaseConfig); db = firebase.database(app); }
+catch(e) { console.error("Firebase init failed:", e); }
 
 // ── Constants ──────────────────────────────────────────────────
 const CATEGORIES = ["Opening Worship","Praise & Worship","Offering","Communion","Altar Call","Closing Worship","Special Number","Other"];
 const KEYS = ["C","C#/Db","D","D#/Eb","E","F","F#/Gb","G","G#/Ab","A","A#/Bb","B"];
-
 const ROLES = [
   { key:"songLeader", label:"Song Leader",  icon:"🎤" },
   { key:"backup",     label:"Back Up",       icon:"🎵" },
@@ -60,20 +52,12 @@ const ROLES = [
   { key:"organ",      label:"Organ / Keys",  icon:"🎹" },
 ];
 
-const NAVY  = "#1B3A6B";
-const GOLD  = "#C9A84C";
-const WHITE = "#FFFFFF";
-const MUTED = "#6B7A99";
-const BORDER= "#D0DAF5";
-const RED   = "#CC0000";
-const LIGHT = "#EEF3FF";
-
+const NAVY="#1B3A6B", GOLD="#C9A84C", WHITE="#FFFFFF", MUTED="#6B7A99", BORDER="#D0DAF5", RED="#CC0000", LIGHT="#EEF3FF";
 const CAT_COLORS = {
   "Opening Worship":"#1B3A6B","Praise & Worship":"#2563EB","Offering":"#C9A84C",
   "Communion":"#6B3FA0","Altar Call":"#C0392B","Closing Worship":"#1B3A6B",
   "Special Number":"#1A7F55","Other":"#6B7A99",
 };
-
 const B  = { border:"none", borderRadius:8, padding:"9px 20px", fontWeight:700, fontSize:14, cursor:"pointer" };
 const G  = { background:"transparent", color:NAVY, border:`1.5px solid ${BORDER}`, borderRadius:8, padding:"7px 14px", fontWeight:500, fontSize:13, cursor:"pointer" };
 const IN = { width:"100%", border:`1.5px solid ${BORDER}`, borderRadius:8, padding:"9px 12px", fontSize:14, background:WHITE, color:"#1a2744", outline:"none", fontFamily:"inherit", boxSizing:"border-box" };
@@ -88,34 +72,156 @@ function getYouTubeId(url) {
   return null;
 }
 
+// ✅ Fixed: use LOCAL date methods to avoid UTC timezone shift (PH = UTC+8)
 function getSunday(date) {
   const d = new Date(date);
-  d.setDate(d.getDate() - d.getDay());
-  d.setHours(0,0,0,0);
-  return d.toISOString().split("T")[0];
+  d.setDate(d.getDate() - d.getDay()); // getDay() 0=Sun, so Sun stays, Mon-Sat go back
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2,"0");
+  const day = String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+
+function addWeeks(dateStr, n) {
+  const [y,m,d] = dateStr.split("-").map(Number);
+  const date = new Date(y, m-1, d);
+  date.setDate(date.getDate() + n * 7);
+  const ny = date.getFullYear();
+  const nm = String(date.getMonth()+1).padStart(2,"0");
+  const nd = String(date.getDate()).padStart(2,"0");
+  return `${ny}-${nm}-${nd}`;
 }
 
 function weekLabel(w) {
-  return new Date(w).toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+  const [y,m,d] = w.split("-").map(Number);
+  return new Date(y, m-1, d).toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+}
+
+function weekShort(w) {
+  const [y,m,d] = w.split("-").map(Number);
+  return new Date(y, m-1, d).toLocaleDateString("en-US",{month:"short",day:"numeric"});
 }
 
 function weekKey(w) { return "w" + w.replace(/-/g,""); }
 
+function keyToDate(k) {
+  const s = k.replace(/^w/,"");
+  return `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}`;
+}
+
 function YTIcon({size=14}) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{display:"block",flexShrink:0}}><rect x="2" y="5" width="20" height="14" rx="3" fill={RED}/><polygon points="10,8.5 16,12 10,15.5" fill="white"/></svg>;
+}
+
+// ── Overview Tab ───────────────────────────────────────────────
+function Overview({week, songs, sched}) {
+  const list  = songs[week] || [];
+  const team  = sched[week] || {};
+  const filled = ROLES.filter(r => team[r.key]?.trim());
+  const [openSong, setOpenSong] = useState(null);
+
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{display:"block",flexShrink:0}}>
-      <rect x="2" y="5" width="20" height="14" rx="3" fill={RED}/>
-      <polygon points="10,8.5 16,12 10,15.5" fill="white"/>
-    </svg>
+    <div style={{display:"flex", flexDirection:"column", gap:16}}>
+
+      {/* Team Schedule card */}
+      <div style={{background:WHITE, borderRadius:14, border:`1px solid ${BORDER}`, overflow:"hidden"}}>
+        <div style={{background:`linear-gradient(90deg,${NAVY} 0%,#2a4f8f 100%)`, padding:"12px 16px", display:"flex", alignItems:"center", gap:10}}>
+          <span style={{fontSize:18}}>👥</span>
+          <div>
+            <div style={{color:WHITE, fontWeight:700, fontSize:14}}>Team Schedule</div>
+            <div style={{color:"rgba(255,255,255,0.55)", fontSize:11}}>{weekLabel(week)}</div>
+          </div>
+        </div>
+        <div style={{padding:"14px 16px"}}>
+          {filled.length === 0 ? (
+            <div style={{textAlign:"center", padding:"20px 0", color:MUTED, fontSize:13}}>No team assigned for this Sunday yet.</div>
+          ) : (
+            <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))", gap:10}}>
+              {filled.map(r => (
+                <div key={r.key} style={{background:LIGHT, borderRadius:10, padding:"10px 12px", display:"flex", alignItems:"center", gap:9}}>
+                  <span style={{fontSize:20, flexShrink:0}}>{r.icon}</span>
+                  <div style={{minWidth:0}}>
+                    <div style={{fontSize:10, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.4px"}}>{r.label}</div>
+                    <div style={{fontSize:13, fontWeight:700, color:NAVY, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{team[r.key]}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Song List card */}
+      <div style={{background:WHITE, borderRadius:14, border:`1px solid ${BORDER}`, overflow:"hidden"}}>
+        <div style={{background:`linear-gradient(90deg,#1A7F55 0%,#22a06b 100%)`, padding:"12px 16px", display:"flex", alignItems:"center", gap:10}}>
+          <span style={{fontSize:18}}>🎵</span>
+          <div>
+            <div style={{color:WHITE, fontWeight:700, fontSize:14}}>Song List</div>
+            <div style={{color:"rgba(255,255,255,0.55)", fontSize:11}}>{list.length} song{list.length!==1?"s":""} this Sunday</div>
+          </div>
+        </div>
+        <div style={{padding:"10px 12px"}}>
+          {list.length === 0 ? (
+            <div style={{textAlign:"center", padding:"20px 0", color:MUTED, fontSize:13}}>No songs added for this Sunday yet.</div>
+          ) : (
+            <div style={{display:"flex", flexDirection:"column", gap:6}}>
+              {list.map((song, i) => {
+                const color = CAT_COLORS[song.category] || MUTED;
+                const vid   = getYouTubeId(song.youtube);
+                const isOpen = openSong === song.id;
+                return (
+                  <div key={song.id} style={{borderRadius:10, border:`1px solid ${BORDER}`, overflow:"hidden"}}>
+                    <div style={{display:"flex", alignItems:"center", gap:10, padding:"10px 12px", cursor:"pointer"}} onClick={()=>setOpenSong(isOpen?null:song.id)}>
+                      <div style={{width:28, height:28, borderRadius:7, background:color+"22", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0}}>
+                        <span style={{fontSize:12, fontWeight:800, color}}>{i+1}</span>
+                      </div>
+                      <div style={{flex:1, minWidth:0}}>
+                        <div style={{display:"flex", alignItems:"center", gap:5, flexWrap:"wrap"}}>
+                          <span style={{fontWeight:700, fontSize:13, color:NAVY}}>{song.title}</span>
+                          <span style={{fontSize:9, background:color+"22", color, borderRadius:4, padding:"1px 7px", fontWeight:700}}>{song.category}</span>
+                          {vid && <span style={{fontSize:9, background:"#FFF0F0", color:RED, borderRadius:4, padding:"1px 6px", fontWeight:700, display:"inline-flex", alignItems:"center", gap:2}}><YTIcon size={9}/> YT</span>}
+                        </div>
+                        <div style={{display:"flex", gap:10, marginTop:1}}>
+                          {song.artist && <span style={{fontSize:11, color:MUTED}}>{song.artist}</span>}
+                          {song.key && <span style={{fontSize:11, color:MUTED}}>Key: <b style={{color:NAVY}}>{song.key}</b></span>}
+                          {song.tempo && <span style={{fontSize:11, color:MUTED}}>{song.tempo} BPM</span>}
+                        </div>
+                      </div>
+                      <div style={{display:"flex", gap:5, flexShrink:0}}>
+                        {vid && <a href={song.youtube} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={{...G, display:"inline-flex", alignItems:"center", gap:4, textDecoration:"none", color:RED, borderColor:"#FFCCCC", fontSize:10, padding:"4px 8px"}}><YTIcon size={11}/> Watch</a>}
+                        <span style={{fontSize:12, color:MUTED}}>{isOpen?"▲":"▼"}</span>
+                      </div>
+                    </div>
+                    {isOpen && (
+                      <div style={{borderTop:`1px solid ${BORDER}`, padding:"10px 12px", background:"#F8FAFF"}}>
+                        {vid && (
+                          <div style={{marginBottom:10, display:"flex", gap:10, alignItems:"flex-start"}}>
+                            <a href={song.youtube} target="_blank" rel="noreferrer">
+                              <img src={`https://img.youtube.com/vi/${vid}/mqdefault.jpg`} alt="thumb" style={{width:100, height:56, borderRadius:6, objectFit:"cover", display:"block"}}/>
+                            </a>
+                            <a href={song.youtube} target="_blank" rel="noreferrer" style={{fontSize:12, color:RED, textDecoration:"none", display:"flex", alignItems:"center", gap:4, marginTop:4}}><YTIcon size={12}/> Open on YouTube</a>
+                          </div>
+                        )}
+                        {song.notes && <p style={{fontSize:12, color:"#334", lineHeight:1.7, marginBottom:8}}><b>Notes:</b> {song.notes}</p>}
+                        {song.lyrics && <pre style={{fontSize:11, color:"#223", lineHeight:1.8, background:WHITE, border:`1px solid ${BORDER}`, borderRadius:7, padding:"9px 11px", fontFamily:"'Courier New',monospace", margin:0}}>{song.lyrics}</pre>}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
-// ── Song Card ──────────────────────────────────────────────────
+// ── Song Card (for Songs tab) ──────────────────────────────────
 function SongCard({song, index, onEdit, onDelete}) {
   const [open, setOpen] = useState(false);
   const color = CAT_COLORS[song.category] || MUTED;
   const vid   = getYouTubeId(song.youtube);
-
   return (
     <div style={{background:WHITE, borderRadius:12, border:`1px solid ${BORDER}`, overflow:"hidden"}}>
       <div style={{display:"flex", alignItems:"center", gap:12, padding:"13px 15px"}}>
@@ -135,16 +241,10 @@ function SongCard({song, index, onEdit, onDelete}) {
           </div>
         </div>
         <div style={{display:"flex", gap:6, flexShrink:0}}>
-          {vid && (
-            <a href={song.youtube} target="_blank" rel="noreferrer"
-              style={{...G, display:"inline-flex", alignItems:"center", gap:5, textDecoration:"none", color:RED, borderColor:"#FFCCCC", fontSize:11, padding:"5px 9px"}}>
-              <YTIcon size={12}/> Watch
-            </a>
-          )}
+          {vid && <a href={song.youtube} target="_blank" rel="noreferrer" style={{...G, display:"inline-flex", alignItems:"center", gap:5, textDecoration:"none", color:RED, borderColor:"#FFCCCC", fontSize:11, padding:"5px 9px"}}><YTIcon size={12}/> Watch</a>}
           <button onClick={()=>setOpen(x=>!x)} style={{...G, padding:"5px 11px", fontSize:12}}>{open?"▲":"▼"}</button>
         </div>
       </div>
-
       {open && (
         <div style={{borderTop:`1px solid ${BORDER}`, padding:"13px 15px", background:"#F8FAFF"}}>
           {vid && (
@@ -152,31 +252,17 @@ function SongCard({song, index, onEdit, onDelete}) {
               <div style={{fontSize:10, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:7}}>YouTube Reference</div>
               <div style={{display:"flex", alignItems:"flex-start", gap:11}}>
                 <a href={song.youtube} target="_blank" rel="noreferrer">
-                  <img src={`https://img.youtube.com/vi/${vid}/mqdefault.jpg`} alt="thumbnail"
-                    style={{width:110, height:62, borderRadius:6, objectFit:"cover", display:"block"}}/>
+                  <img src={`https://img.youtube.com/vi/${vid}/mqdefault.jpg`} alt="thumbnail" style={{width:110, height:62, borderRadius:6, objectFit:"cover", display:"block"}}/>
                 </a>
                 <div>
                   <div style={{fontSize:13, fontWeight:600, color:NAVY, marginBottom:5}}>{song.title}</div>
-                  <a href={song.youtube} target="_blank" rel="noreferrer"
-                    style={{fontSize:12, color:RED, textDecoration:"none", display:"flex", alignItems:"center", gap:4}}>
-                    <YTIcon size={12}/> Open on YouTube
-                  </a>
+                  <a href={song.youtube} target="_blank" rel="noreferrer" style={{fontSize:12, color:RED, textDecoration:"none", display:"flex", alignItems:"center", gap:4}}><YTIcon size={12}/> Open on YouTube</a>
                 </div>
               </div>
             </div>
           )}
-          {song.notes && (
-            <div style={{marginBottom:10}}>
-              <div style={{fontSize:10, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:4}}>Team Notes</div>
-              <p style={{fontSize:13, color:"#334", lineHeight:1.7, margin:0}}>{song.notes}</p>
-            </div>
-          )}
-          {song.lyrics && (
-            <div style={{marginBottom:12}}>
-              <div style={{fontSize:10, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:5}}>Lyrics / Chord Chart</div>
-              <pre style={{fontSize:12, color:"#223", lineHeight:1.8, background:WHITE, border:`1px solid ${BORDER}`, borderRadius:8, padding:"11px 13px", fontFamily:"'Courier New',monospace", margin:0}}>{song.lyrics}</pre>
-            </div>
-          )}
+          {song.notes && <div style={{marginBottom:10}}><div style={{fontSize:10, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:4}}>Team Notes</div><p style={{fontSize:13, color:"#334", lineHeight:1.7, margin:0}}>{song.notes}</p></div>}
+          {song.lyrics && <div style={{marginBottom:12}}><div style={{fontSize:10, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:5}}>Lyrics / Chord Chart</div><pre style={{fontSize:12, color:"#223", lineHeight:1.8, background:WHITE, border:`1px solid ${BORDER}`, borderRadius:8, padding:"11px 13px", fontFamily:"'Courier New',monospace", margin:0}}>{song.lyrics}</pre></div>}
           <div style={{display:"flex", gap:7}}>
             <button style={{...G, fontSize:12, padding:"5px 13px"}} onClick={onEdit}>Edit</button>
             <button style={{...G, fontSize:12, padding:"5px 13px", color:"#C0392B", borderColor:"#F5C6C6"}} onClick={onDelete}>Remove</button>
@@ -194,44 +280,28 @@ function SongModal({initial, onSave, onClose}) {
   const [saving, setSaving] = useState(false);
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
   const vid = getYouTubeId(form.youtube);
-
   async function submit() {
     if (!form.title.trim()) return;
     setSaving(true);
     await onSave({...form, id:initial?.id||Date.now().toString(), title:form.title.trim()});
     setSaving(false);
   }
-
   return (
-    <div onClick={e=>e.target===e.currentTarget&&onClose()}
-      style={{position:"fixed", inset:0, background:"rgba(10,20,50,0.6)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:16}}>
+    <div onClick={e=>e.target===e.currentTarget&&onClose()} style={{position:"fixed", inset:0, background:"rgba(10,20,50,0.6)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:16}}>
       <div style={{background:WHITE, borderRadius:16, width:"100%", maxWidth:500, maxHeight:"92vh", overflowY:"auto", boxShadow:"0 8px 40px rgba(0,0,0,0.3)"}}>
         <div style={{background:NAVY, borderRadius:"16px 16px 0 0", padding:"17px 22px", display:"flex", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, zIndex:1}}>
           <span style={{color:WHITE, fontSize:16, fontWeight:700}}>{initial?"Edit Song":"Add Song"}</span>
           <button onClick={onClose} style={{background:"rgba(255,255,255,0.15)", border:"none", color:WHITE, borderRadius:7, width:28, height:28, cursor:"pointer", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center"}}>×</button>
         </div>
         <div style={{padding:22, display:"flex", flexDirection:"column", gap:13}}>
-          <div><label style={LB}>Song Title *</label>
-            <input style={IN} value={form.title} onChange={e=>set("title",e.target.value)} placeholder="e.g. Great Are You Lord" autoFocus/>
-          </div>
+          <div><label style={LB}>Song Title *</label><input style={IN} value={form.title} onChange={e=>set("title",e.target.value)} placeholder="e.g. Great Are You Lord" autoFocus/></div>
           <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:11}}>
             <div><label style={LB}>Artist / Composer</label><input style={IN} value={form.artist} onChange={e=>set("artist",e.target.value)} placeholder="Artist name"/></div>
-            <div><label style={LB}>Category</label>
-              <select style={IN} value={form.category} onChange={e=>set("category",e.target.value)}>
-                {CATEGORIES.map(c=><option key={c}>{c}</option>)}
-              </select>
-            </div>
+            <div><label style={LB}>Category</label><select style={IN} value={form.category} onChange={e=>set("category",e.target.value)}>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></div>
           </div>
           <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:11}}>
-            <div><label style={LB}>Key</label>
-              <select style={IN} value={form.key} onChange={e=>set("key",e.target.value)}>
-                <option value="">— Select —</option>
-                {KEYS.map(k=><option key={k}>{k}</option>)}
-              </select>
-            </div>
-            <div><label style={LB}>Tempo (BPM)</label>
-              <input style={IN} type="number" value={form.tempo} onChange={e=>set("tempo",e.target.value)} placeholder="e.g. 120" min={40} max={240}/>
-            </div>
+            <div><label style={LB}>Key</label><select style={IN} value={form.key} onChange={e=>set("key",e.target.value)}><option value="">— Select —</option>{KEYS.map(k=><option key={k}>{k}</option>)}</select></div>
+            <div><label style={LB}>Tempo (BPM)</label><input style={IN} type="number" value={form.tempo} onChange={e=>set("tempo",e.target.value)} placeholder="e.g. 120" min={40} max={240}/></div>
           </div>
           <div>
             <label style={LB}>YouTube Link</label>
@@ -240,27 +310,13 @@ function SongModal({initial, onSave, onClose}) {
               <input style={{...IN, paddingLeft:32}} value={form.youtube} onChange={e=>set("youtube",e.target.value)} placeholder="https://www.youtube.com/watch?v=..."/>
             </div>
             {form.youtube && !vid && <div style={{fontSize:11, color:"#C0392B", marginTop:4}}>Please paste a valid YouTube URL</div>}
-            {vid && (
-              <div style={{display:"flex", alignItems:"center", gap:10, marginTop:7, background:"#FFF8F8", border:"1px solid #FFCCCC", borderRadius:8, padding:"7px 10px"}}>
-                <img src={`https://img.youtube.com/vi/${vid}/default.jpg`} alt="" style={{width:56, height:32, borderRadius:4, objectFit:"cover"}}/>
-                <span style={{fontSize:12, color:RED, fontWeight:700}}>Video linked ✓</span>
-              </div>
-            )}
+            {vid && <div style={{display:"flex", alignItems:"center", gap:10, marginTop:7, background:"#FFF8F8", border:"1px solid #FFCCCC", borderRadius:8, padding:"7px 10px"}}><img src={`https://img.youtube.com/vi/${vid}/default.jpg`} alt="" style={{width:56, height:32, borderRadius:4, objectFit:"cover"}}/><span style={{fontSize:12, color:RED, fontWeight:700}}>Video linked ✓</span></div>}
           </div>
-          <div><label style={LB}>Team Notes</label>
-            <textarea style={{...IN, resize:"vertical", minHeight:65}} value={form.notes} onChange={e=>set("notes",e.target.value)} placeholder="Key changes, transitions, special instructions…"/>
-          </div>
-          <div><label style={LB}>Lyrics / Chord Chart</label>
-            <textarea style={{...IN, resize:"vertical", minHeight:110, fontFamily:"'Courier New',monospace", fontSize:12, lineHeight:1.7}}
-              value={form.lyrics} onChange={e=>set("lyrics",e.target.value)}
-              placeholder={"[Verse 1]\nPaste lyrics or chord chart here…\n\n[Chorus]\n…"}/>
-          </div>
+          <div><label style={LB}>Team Notes</label><textarea style={{...IN, resize:"vertical", minHeight:65}} value={form.notes} onChange={e=>set("notes",e.target.value)} placeholder="Key changes, transitions, special instructions…"/></div>
+          <div><label style={LB}>Lyrics / Chord Chart</label><textarea style={{...IN, resize:"vertical", minHeight:110, fontFamily:"'Courier New',monospace", fontSize:12, lineHeight:1.7}} value={form.lyrics} onChange={e=>set("lyrics",e.target.value)} placeholder={"[Verse 1]\nPaste lyrics or chord chart here…\n\n[Chorus]\n…"}/></div>
           <div style={{display:"flex", gap:9, justifyContent:"flex-end", paddingTop:4}}>
             <button style={G} onClick={onClose}>Cancel</button>
-            <button style={{...B, background:NAVY, color:WHITE, opacity:form.title.trim()&&!saving?1:0.45}}
-              onClick={submit} disabled={!form.title.trim()||saving}>
-              {saving?"Saving…":initial?"Save Changes":"Add Song"}
-            </button>
+            <button style={{...B, background:NAVY, color:WHITE, opacity:form.title.trim()&&!saving?1:0.45}} onClick={submit} disabled={!form.title.trim()||saving}>{saving?"Saving…":initial?"Save Changes":"Add Song"}</button>
           </div>
         </div>
       </div>
@@ -268,23 +324,15 @@ function SongModal({initial, onSave, onClose}) {
   );
 }
 
-// ── Team Schedule ──────────────────────────────────────────────
+// ── Team Schedule Tab ──────────────────────────────────────────
 function TeamSchedule({week, sched, onSave}) {
   const [form, setForm]     = useState(sched[week] || {});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved]   = useState(true);
-
   useEffect(()=>{ setForm(sched[week]||{}); setSaved(true); }, [week, sched]);
-
   const set = (k,v) => { setForm(f=>({...f,[k]:v})); setSaved(false); };
   const filled = ROLES.filter(r => form[r.key]?.trim());
-
-  async function save() {
-    setSaving(true);
-    await onSave(week, form);
-    setSaving(false); setSaved(true);
-  }
-
+  async function save() { setSaving(true); await onSave(week,form); setSaving(false); setSaved(true); }
   return (
     <div>
       {filled.length > 0 && (
@@ -315,9 +363,7 @@ function TeamSchedule({week, sched, onSave}) {
         ))}
       </div>
       <div style={{display:"flex", alignItems:"center", gap:12}}>
-        <button style={{...B, background:NAVY, color:WHITE, opacity:saving?0.6:1}} onClick={save} disabled={saving}>
-          {saving?"Saving…":"Save Schedule"}
-        </button>
+        <button style={{...B, background:NAVY, color:WHITE, opacity:saving?0.6:1}} onClick={save} disabled={saving}>{saving?"Saving…":"Save Schedule"}</button>
         {saved && filled.length>0 && <span style={{fontSize:13, color:"#1A7F55", fontWeight:600}}>✓ Saved</span>}
         {!saved && <span style={{fontSize:13, color:GOLD, fontWeight:600}}>● Unsaved changes</span>}
       </div>
@@ -337,7 +383,7 @@ function App() {
   const [songs,    setSongs]   = useState({});
   const [sched,    setSched]   = useState({});
   const [week,     setWeek]    = useState(getSunday(new Date()));
-  const [tab,      setTab]     = useState("songs");
+  const [tab,      setTab]     = useState("overview");
   const [modal,    setModal]   = useState(false);
   const [editing,  setEditing] = useState(null);
   const [search,   setSearch]  = useState("");
@@ -347,54 +393,39 @@ function App() {
 
   const notify = (msg, type="success") => { setToast({msg,type}); setTimeout(()=>setToast(null),3500); };
 
-  // Real-time Firebase listeners
   useEffect(()=>{
     if (!db) { setStatus("error"); return; }
-
     const songsRef = db.ref("songs");
     const schedRef = db.ref("schedule");
-
     songsRef.on("value", snap=>{
       const val = snap.val() || {};
       const out = {};
-      Object.keys(val).forEach(k=>{
-        const dateKey = k.replace(/^w/, "").replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3");
-        out[dateKey] = Object.values(val[k] || {});
-      });
-      setSongs(out);
-      setStatus("online");
+      Object.keys(val).forEach(k=>{ out[keyToDate(k)] = Object.values(val[k]||{}); });
+      setSongs(out); setStatus("online");
     }, ()=>setStatus("error"));
-
     schedRef.on("value", snap=>{
       const val = snap.val() || {};
       const out = {};
-      Object.keys(val).forEach(k=>{
-        const dateKey = k.replace(/^w/, "").replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3");
-        out[dateKey] = val[k];
-      });
+      Object.keys(val).forEach(k=>{ out[keyToDate(k)] = val[k]; });
       setSched(out);
     });
-
     return ()=>{ songsRef.off(); schedRef.off(); };
   },[]);
 
   async function saveSongs(w, list) {
     if (!db) return;
-    const obj = {};
-    list.forEach(s=>{ obj[s.id] = s; });
-    await db.ref(`songs/${weekKey(w)}`).set(list.length ? obj : null);
+    const obj = {}; list.forEach(s=>{ obj[s.id]=s; });
+    await db.ref(`songs/${weekKey(w)}`).set(list.length?obj:null);
   }
-
   async function saveSched(w, data) {
     if (!db) return;
     await db.ref(`schedule/${weekKey(w)}`).set(data);
     notify("Team schedule saved!");
   }
 
-  const isThisWeek = week===getSunday(new Date());
+  const thisWeek = getSunday(new Date());
+  const isThisWeek = week === thisWeek;
   const allWeeks = [...new Set([...Object.keys(songs),...Object.keys(sched)])].sort().reverse();
-
-  function shiftWeek(n){ const d=new Date(week); d.setDate(d.getDate()+n*7); setWeek(d.toISOString().split("T")[0]); }
 
   const weekSongs = (songs[week]||[]).filter(s=>{
     const q=search.toLowerCase();
@@ -406,27 +437,28 @@ function App() {
     const list=[...(songs[week]||[])];
     if(editing){ const i=list.findIndex(s=>s.id===editing.id); if(i>-1)list[i]=song; else list.push(song); }
     else list.push(song);
-    await saveSongs(week, list);
+    await saveSongs(week,list);
     setModal(false); setEditing(null);
     notify(editing?"Song updated!":"Song added! 🎵");
   }
 
-  async function handleDelete(song){
-    const list=(songs[week]||[]).filter(s=>s.id!==song.id);
-    await saveSongs(week, list);
-    notify("Song removed");
-  }
+  const TABS = [
+    {id:"overview", label:"📋 This Sunday"},
+    {id:"songs",    label:"🎵 Songs"},
+    {id:"schedule", label:"👥 Schedule"},
+  ];
 
-  const statusDot = { online:"#4ADE80", error:"#F87171", connecting:"#FCD34D" }[status];
-  const statusText = { online:"Live", error:"Offline", connecting:"Connecting…" }[status];
+  const statusDot  = {online:"#4ADE80",error:"#F87171",connecting:"#FCD34D"}[status];
+  const statusText = {online:"Live",error:"Offline",connecting:"Connecting…"}[status];
 
   return (
     <div style={{fontFamily:"'Segoe UI',system-ui,sans-serif", background:LIGHT, minHeight:"100vh", color:"#1a2744"}}>
 
+      {/* ── Header ── */}
       <div style={{background:"linear-gradient(135deg,#1B3A6B 0%,#2a4f8f 100%)"}}>
         <div style={{maxWidth:860, margin:"0 auto", padding:"18px 18px 0"}}>
 
-          {/* Brand */}
+          {/* Brand row */}
           <div style={{display:"flex", alignItems:"center", gap:13, marginBottom:14}}>
             <div style={{width:42, height:42, borderRadius:10, background:GOLD, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0}}>
               <svg width="23" height="23" viewBox="0 0 24 24" fill="none">
@@ -445,36 +477,39 @@ function App() {
             </div>
           </div>
 
-          {/* Week nav */}
+          {/* Week nav — only Sundays */}
           <div style={{display:"flex", alignItems:"center", gap:10, padding:"13px 0 0", borderTop:"1px solid rgba(255,255,255,0.12)"}}>
-            <button onClick={()=>shiftWeek(-1)} style={{...G, color:"rgba(255,255,255,0.75)", borderColor:"rgba(255,255,255,0.25)", padding:"5px 13px", fontSize:12}}>← Prev</button>
+            <button onClick={()=>setWeek(addWeeks(week,-1))} style={{...G, color:"rgba(255,255,255,0.75)", borderColor:"rgba(255,255,255,0.25)", padding:"5px 13px", fontSize:12}}>← Prev</button>
             <div style={{flex:1, textAlign:"center"}}>
-              <div style={{color:GOLD, fontSize:10, fontWeight:800, letterSpacing:"1.2px", textTransform:"uppercase"}}>{isThisWeek?"This Sunday":"Sunday Service"}</div>
+              <div style={{color:GOLD, fontSize:10, fontWeight:800, letterSpacing:"1.2px", textTransform:"uppercase"}}>
+                {isThisWeek?"This Sunday":"Sunday Service"}
+              </div>
               <div style={{color:WHITE, fontSize:14, fontWeight:600}}>{weekLabel(week)}</div>
             </div>
-            <button onClick={()=>shiftWeek(1)} style={{...G, color:"rgba(255,255,255,0.75)", borderColor:"rgba(255,255,255,0.25)", padding:"5px 13px", fontSize:12}}>Next →</button>
+            <button onClick={()=>setWeek(addWeeks(week,1))} style={{...G, color:"rgba(255,255,255,0.75)", borderColor:"rgba(255,255,255,0.25)", padding:"5px 13px", fontSize:12}}>Next →</button>
           </div>
 
-          {allWeeks.length>1 && (
+          {/* Past Sunday quick tabs */}
+          {allWeeks.length > 1 && (
             <div style={{display:"flex", gap:5, overflowX:"auto", padding:"9px 0 0", scrollbarWidth:"none"}}>
               {allWeeks.slice(0,10).map(w=>(
                 <button key={w} onClick={()=>setWeek(w)}
                   style={{background:w===week?GOLD:"rgba(255,255,255,0.12)", color:WHITE, border:"none", borderRadius:6, padding:"3px 12px", fontSize:11, cursor:"pointer", whiteSpace:"nowrap", fontWeight:w===week?700:400}}>
-                  {new Date(w).toLocaleDateString("en-US",{month:"short",day:"numeric"})}
+                  {weekShort(w)}
                 </button>
               ))}
             </div>
           )}
 
-          {/* Tabs */}
-          <div style={{display:"flex", gap:2, marginTop:14}}>
-            {[{id:"songs",label:"🎵  Songs"},{id:"schedule",label:"👥  Team Schedule"}].map(t=>(
+          {/* Section tabs */}
+          <div style={{display:"flex", gap:0, marginTop:14}}>
+            {TABS.map(t=>(
               <button key={t.id} onClick={()=>setTab(t.id)} style={{
                 background:tab===t.id?"rgba(255,255,255,0.15)":"transparent",
                 color:tab===t.id?WHITE:"rgba(255,255,255,0.5)",
                 border:"none", borderRadius:"8px 8px 0 0",
-                padding:"9px 20px", fontWeight:tab===t.id?700:500,
-                fontSize:13, cursor:"pointer",
+                padding:"9px 16px", fontWeight:tab===t.id?700:500,
+                fontSize:12, cursor:"pointer",
                 borderBottom:tab===t.id?`2.5px solid ${GOLD}`:"2.5px solid transparent",
               }}>{t.label}</button>
             ))}
@@ -482,45 +517,33 @@ function App() {
         </div>
       </div>
 
-      {/* Body */}
+      {/* ── Body ── */}
       <div style={{maxWidth:860, margin:"0 auto", padding:"20px 18px"}}>
 
-        {status==="connecting" && (
-          <div style={{background:"#FEF9C3", border:"1px solid #FDE047", borderRadius:10, padding:"12px 16px", marginBottom:16, fontSize:13, color:"#854D0E", fontWeight:500}}>
-            ⏳ Connecting to database…
-          </div>
-        )}
-        {status==="error" && (
-          <div style={{background:"#FEE2E2", border:"1px solid #FCA5A5", borderRadius:10, padding:"12px 16px", marginBottom:16, fontSize:13, color:"#991B1B", fontWeight:500}}>
-            ⚠️ Cannot connect to Firebase. Please check your internet connection and try again.
-          </div>
-        )}
+        {status==="connecting" && <div style={{background:"#FEF9C3", border:"1px solid #FDE047", borderRadius:10, padding:"12px 16px", marginBottom:16, fontSize:13, color:"#854D0E", fontWeight:500}}>⏳ Connecting to database…</div>}
+        {status==="error"      && <div style={{background:"#FEE2E2", border:"1px solid #FCA5A5", borderRadius:10, padding:"12px 16px", marginBottom:16, fontSize:13, color:"#991B1B", fontWeight:500}}>⚠️ Cannot connect to Firebase. Check your internet connection.</div>}
 
+        {/* Overview Tab */}
+        {tab==="overview" && <Overview week={week} songs={songs} sched={sched}/>}
+
+        {/* Songs Tab */}
         {tab==="songs" && <>
           <div style={{display:"flex", gap:9, marginBottom:14, flexWrap:"wrap"}}>
-            <input style={{...IN, width:"auto", flex:"1 1 150px", maxWidth:250}}
-              placeholder="Search song or artist…" value={search} onChange={e=>setSearch(e.target.value)}/>
+            <input style={{...IN, width:"auto", flex:"1 1 150px", maxWidth:250}} placeholder="Search song or artist…" value={search} onChange={e=>setSearch(e.target.value)}/>
             <select style={{...IN, width:"auto"}} value={catFilter} onChange={e=>setCat(e.target.value)}>
               <option value="All">All Categories</option>
               {CATEGORIES.map(c=><option key={c}>{c}</option>)}
             </select>
-            <button style={{...B, background:GOLD, color:WHITE, marginLeft:"auto"}}
-              onClick={()=>{setEditing(null);setModal(true);}}>+ Add Song</button>
+            <button style={{...B, background:GOLD, color:WHITE, marginLeft:"auto"}} onClick={()=>{setEditing(null);setModal(true);}}>+ Add Song</button>
           </div>
-
           <div style={{display:"flex", gap:9, marginBottom:18, flexWrap:"wrap"}}>
-            {[
-              {label:"Songs This Week", val:(songs[week]||[]).length},
-              {label:"With YouTube",    val:(songs[week]||[]).filter(s=>getYouTubeId(s.youtube)).length},
-              {label:"Weeks Logged",    val:allWeeks.length},
-            ].map(m=>(
+            {[{label:"Songs This Week",val:(songs[week]||[]).length},{label:"With YouTube",val:(songs[week]||[]).filter(s=>getYouTubeId(s.youtube)).length},{label:"Weeks Logged",val:allWeeks.length}].map(m=>(
               <div key={m.label} style={{background:WHITE, borderRadius:10, border:`1px solid ${BORDER}`, padding:"9px 16px", minWidth:105}}>
                 <div style={{fontSize:22, fontWeight:800, color:NAVY}}>{m.val}</div>
                 <div style={{fontSize:10, color:MUTED, fontWeight:700, marginTop:1}}>{m.label}</div>
               </div>
             ))}
           </div>
-
           {weekSongs.length===0 ? (
             <div style={{textAlign:"center", padding:"60px 0", color:MUTED}}>
               <div style={{fontSize:44, opacity:0.2, marginBottom:12}}>♪</div>
@@ -533,15 +556,14 @@ function App() {
               {weekSongs.map((song,i)=>(
                 <SongCard key={song.id} song={song} index={i}
                   onEdit={()=>{setEditing(song);setModal(true);}}
-                  onDelete={()=>handleDelete(song)}/>
+                  onDelete={async()=>{ const list=(songs[week]||[]).filter(s=>s.id!==song.id); await saveSongs(week,list); notify("Song removed","info"); }}/>
               ))}
             </div>
           )}
         </>}
 
-        {tab==="schedule" && (
-          <TeamSchedule week={week} sched={sched} onSave={saveSched}/>
-        )}
+        {/* Schedule Tab */}
+        {tab==="schedule" && <TeamSchedule week={week} sched={sched} onSave={saveSched}/>}
       </div>
 
       {modal && <SongModal initial={editing} onSave={handleSongSave} onClose={()=>{setModal(false);setEditing(null);}}/>}
