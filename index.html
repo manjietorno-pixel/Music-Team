@@ -1,177 +1,185 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Worship Song Hub</title>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>UCC Pasay Music Team Hub</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', system-ui, sans-serif; background: #EEF3FF; color: #1a2744; min-height: 100vh; }
   input, select, textarea, button { font-family: inherit; }
-  ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: #C0CADF; border-radius: 3px; }
-  a { color: inherit; }
   pre { white-space: pre-wrap; word-break: break-word; }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-thumb { background: #C0CADF; border-radius: 3px; }
+  ::-webkit-scrollbar-track { background: transparent; }
 </style>
 </head>
 <body>
-<div id="root"></div>
-<script type="text/babel">
-const { useState, useEffect, useCallback } = React;
+<div id="root"><div style="text-align:center;padding:80px 20px;color:#6B7A99;font-family:system-ui">Loading UCC Pasay Music Team Hub…</div></div>
 
+<!-- Load all external scripts first, synchronously -->
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<!-- App — runs after all scripts above are loaded -->
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+// ── Firebase init (all external scripts loaded at this point) ──
+const firebaseConfig = {
+  apiKey: "AIzaSyDEfvJ9mRoKIJEknmZfEo0w1ESp9sTLPQ4",
+  authDomain: "ucc-pasay-music-team-hub.firebaseapp.com",
+  databaseURL: "https://ucc-pasay-music-team-hub-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "ucc-pasay-music-team-hub",
+  storageBucket: "ucc-pasay-music-team-hub.firebasestorage.app",
+  messagingSenderId: "708266011081",
+  appId: "1:708266011081:web:201e7d40c191624b9e6018"
+};
+
+let db = null;
+try {
+  const app = firebase.initializeApp(firebaseConfig);
+  db = firebase.database(app);
+} catch(e) {
+  console.error("Firebase init failed:", e);
+}
+
+// ── Constants ──────────────────────────────────────────────────
 const CATEGORIES = ["Opening Worship","Praise & Worship","Offering","Communion","Altar Call","Closing Worship","Special Number","Other"];
 const KEYS = ["C","C#/Db","D","D#/Eb","E","F","F#/Gb","G","G#/Ab","A","A#/Bb","B"];
-const STORAGE_KEY = "worship_hub_songs_v1";
 
-const NAVY = "#1B3A6B";
-const GOLD = "#C9A84C";
-const LIGHT = "#EEF3FF";
+const ROLES = [
+  { key:"songLeader", label:"Song Leader",  icon:"🎤" },
+  { key:"backup",     label:"Back Up",       icon:"🎵" },
+  { key:"drummer",    label:"Drummer",       icon:"🥁" },
+  { key:"guitar",     label:"Guitar",        icon:"🎸" },
+  { key:"bass",       label:"Bass",          icon:"🎸" },
+  { key:"organ",      label:"Organ / Keys",  icon:"🎹" },
+];
+
+const NAVY  = "#1B3A6B";
+const GOLD  = "#C9A84C";
 const WHITE = "#FFFFFF";
 const MUTED = "#6B7A99";
-const BORDER = "#D0DAF5";
-const RED = "#CC0000";
+const BORDER= "#D0DAF5";
+const RED   = "#CC0000";
+const LIGHT = "#EEF3FF";
 
 const CAT_COLORS = {
-  "Opening Worship": "#1B3A6B","Praise & Worship": "#2563EB","Offering": "#C9A84C",
-  "Communion": "#6B3FA0","Altar Call": "#C0392B","Closing Worship": "#1B3A6B",
-  "Special Number": "#1A7F55","Other": "#6B7A99",
+  "Opening Worship":"#1B3A6B","Praise & Worship":"#2563EB","Offering":"#C9A84C",
+  "Communion":"#6B3FA0","Altar Call":"#C0392B","Closing Worship":"#1B3A6B",
+  "Special Number":"#1A7F55","Other":"#6B7A99",
 };
 
-const s = {
-  btn: { background: NAVY, color: WHITE, border: "none", borderRadius: 8, padding: "9px 20px", fontWeight: 600, fontSize: 14, cursor: "pointer" },
-  ghost: { background: "transparent", color: NAVY, border: `1.5px solid ${BORDER}`, borderRadius: 8, padding: "7px 14px", fontWeight: 500, fontSize: 13, cursor: "pointer" },
-  danger: { background: "transparent", color: "#C0392B", border: "1.5px solid #F5C6C6", borderRadius: 8, padding: "6px 12px", fontWeight: 500, fontSize: 13, cursor: "pointer" },
-  gold: { background: GOLD, color: WHITE, border: "none", borderRadius: 8, padding: "9px 20px", fontWeight: 700, fontSize: 14, cursor: "pointer" },
-  input: { width: "100%", border: `1.5px solid ${BORDER}`, borderRadius: 8, padding: "9px 12px", fontSize: 14, background: WHITE, color: "#1a2744", outline: "none", fontFamily: "inherit" },
-  label: { fontSize: 11, fontWeight: 700, color: MUTED, display: "block", marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.6px" },
-};
+const B  = { border:"none", borderRadius:8, padding:"9px 20px", fontWeight:700, fontSize:14, cursor:"pointer" };
+const G  = { background:"transparent", color:NAVY, border:`1.5px solid ${BORDER}`, borderRadius:8, padding:"7px 14px", fontWeight:500, fontSize:13, cursor:"pointer" };
+const IN = { width:"100%", border:`1.5px solid ${BORDER}`, borderRadius:8, padding:"9px 12px", fontSize:14, background:WHITE, color:"#1a2744", outline:"none", fontFamily:"inherit", boxSizing:"border-box" };
+const LB = { fontSize:11, fontWeight:700, color:MUTED, display:"block", marginBottom:5, textTransform:"uppercase", letterSpacing:"0.6px" };
 
+// ── Helpers ────────────────────────────────────────────────────
 function getYouTubeId(url) {
   if (!url) return null;
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
-  ];
-  for (const p of patterns) { const m = url.match(p); if (m) return m[1]; }
+  for (const p of [/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/, /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/]) {
+    const m = url.match(p); if (m) return m[1];
+  }
   return null;
 }
 
-function getSundayOfWeek(date) {
+function getSunday(date) {
   const d = new Date(date);
   d.setDate(d.getDate() - d.getDay());
   d.setHours(0,0,0,0);
   return d.toISOString().split("T")[0];
 }
 
-function weekLabel(dateStr) {
-  return new Date(dateStr).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+function weekLabel(w) {
+  return new Date(w).toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});
 }
 
-function YTIcon({ size = 14 }) {
+function weekKey(w) { return "w" + w.replace(/-/g,""); }
+
+function YTIcon({size=14}) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ display:"block", flexShrink:0 }}>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{display:"block",flexShrink:0}}>
       <rect x="2" y="5" width="20" height="14" rx="3" fill={RED}/>
       <polygon points="10,8.5 16,12 10,15.5" fill="white"/>
     </svg>
   );
 }
 
-// ─── Toast ───────────────────────────────────────────────────────────────────
-function Toast({ toast }) {
-  if (!toast) return null;
-  return (
-    <div style={{ position:"fixed", bottom:24, right:24, background: toast.type==="error"?"#C0392B":NAVY, color:WHITE, borderRadius:10, padding:"12px 20px", fontSize:14, fontWeight:600, zIndex:9999, boxShadow:"0 4px 20px rgba(0,0,0,0.2)", maxWidth:300 }}>
-      {toast.msg}
-    </div>
-  );
-}
-
-// ─── Song Card ───────────────────────────────────────────────────────────────
-function SongCard({ song, index, onEdit, onDelete }) {
+// ── Song Card ──────────────────────────────────────────────────
+function SongCard({song, index, onEdit, onDelete}) {
   const [open, setOpen] = useState(false);
   const color = CAT_COLORS[song.category] || MUTED;
-  const vid = getYouTubeId(song.youtube);
+  const vid   = getYouTubeId(song.youtube);
 
   return (
-    <div style={{ background:WHITE, borderRadius:12, border:`1px solid ${BORDER}`, overflow:"hidden" }}>
-      {/* Header row */}
-      <div style={{ display:"flex", alignItems:"center", gap:14, padding:"14px 16px" }}>
-        <div style={{ width:36, height:36, borderRadius:8, background:color+"22", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-          <span style={{ fontSize:15, fontWeight:800, color }}>{index + 1}</span>
+    <div style={{background:WHITE, borderRadius:12, border:`1px solid ${BORDER}`, overflow:"hidden"}}>
+      <div style={{display:"flex", alignItems:"center", gap:12, padding:"13px 15px"}}>
+        <div style={{width:34, height:34, borderRadius:8, background:color+"22", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0}}>
+          <span style={{fontSize:14, fontWeight:800, color}}>{index+1}</span>
         </div>
-
-        <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:7, flexWrap:"wrap", marginBottom:3 }}>
-            <span style={{ fontWeight:700, fontSize:15, color:NAVY }}>{song.title}</span>
-            <span style={{ fontSize:11, background:color+"22", color, borderRadius:6, padding:"2px 9px", fontWeight:700 }}>{song.category}</span>
-            {vid && (
-              <span style={{ fontSize:11, background:"#FFF0F0", color:RED, borderRadius:6, padding:"2px 8px", fontWeight:600, display:"inline-flex", alignItems:"center", gap:4 }}>
-                <YTIcon /> YouTube
-              </span>
-            )}
+        <div style={{flex:1, minWidth:0}}>
+          <div style={{display:"flex", alignItems:"center", gap:6, flexWrap:"wrap", marginBottom:2}}>
+            <span style={{fontWeight:700, fontSize:14, color:NAVY}}>{song.title}</span>
+            <span style={{fontSize:10, background:color+"22", color, borderRadius:5, padding:"2px 8px", fontWeight:700}}>{song.category}</span>
+            {vid && <span style={{fontSize:10, background:"#FFF0F0", color:RED, borderRadius:5, padding:"2px 7px", fontWeight:700, display:"inline-flex", alignItems:"center", gap:3}}><YTIcon size={11}/> YT</span>}
           </div>
-          <div style={{ display:"flex", gap:14, flexWrap:"wrap" }}>
-            {song.artist && <span style={{ fontSize:12, color:MUTED }}>{song.artist}</span>}
-            {song.key && <span style={{ fontSize:12, color:MUTED }}>Key: <b style={{ color:NAVY }}>{song.key}</b></span>}
-            {song.tempo && <span style={{ fontSize:12, color:MUTED }}>{song.tempo} BPM</span>}
+          <div style={{display:"flex", gap:12, flexWrap:"wrap"}}>
+            {song.artist && <span style={{fontSize:11, color:MUTED}}>{song.artist}</span>}
+            {song.key    && <span style={{fontSize:11, color:MUTED}}>Key: <b style={{color:NAVY}}>{song.key}</b></span>}
+            {song.tempo  && <span style={{fontSize:11, color:MUTED}}>{song.tempo} BPM</span>}
           </div>
         </div>
-
-        <div style={{ display:"flex", gap:6, flexShrink:0 }}>
+        <div style={{display:"flex", gap:6, flexShrink:0}}>
           {vid && (
             <a href={song.youtube} target="_blank" rel="noreferrer"
-              style={{ ...s.ghost, display:"inline-flex", alignItems:"center", gap:5, textDecoration:"none", color:RED, borderColor:"#FFCCCC", fontSize:12, padding:"6px 10px" }}>
-              <YTIcon /> Watch
+              style={{...G, display:"inline-flex", alignItems:"center", gap:5, textDecoration:"none", color:RED, borderColor:"#FFCCCC", fontSize:11, padding:"5px 9px"}}>
+              <YTIcon size={12}/> Watch
             </a>
           )}
-          <button onClick={() => setOpen(x=>!x)} style={{ ...s.ghost, padding:"6px 12px", fontSize:13 }}>{open ? "▲" : "▼"}</button>
+          <button onClick={()=>setOpen(x=>!x)} style={{...G, padding:"5px 11px", fontSize:12}}>{open?"▲":"▼"}</button>
         </div>
       </div>
 
-      {/* Expanded */}
       {open && (
-        <div style={{ borderTop:`1px solid ${BORDER}`, padding:"14px 16px", background:"#F8FAFF" }}>
-          {/* YouTube preview */}
+        <div style={{borderTop:`1px solid ${BORDER}`, padding:"13px 15px", background:"#F8FAFF"}}>
           {vid && (
-            <div style={{ marginBottom:14, background:WHITE, border:`1px solid ${BORDER}`, borderRadius:10, padding:"10px 12px" }}>
-              <div style={{ fontSize:11, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:8 }}>YouTube Reference</div>
-              <div style={{ display:"flex", alignItems:"flex-start", gap:12 }}>
+            <div style={{marginBottom:12, background:WHITE, border:`1px solid ${BORDER}`, borderRadius:10, padding:"10px 12px"}}>
+              <div style={{fontSize:10, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:7}}>YouTube Reference</div>
+              <div style={{display:"flex", alignItems:"flex-start", gap:11}}>
                 <a href={song.youtube} target="_blank" rel="noreferrer">
                   <img src={`https://img.youtube.com/vi/${vid}/mqdefault.jpg`} alt="thumbnail"
-                    style={{ width:130, height:73, borderRadius:6, objectFit:"cover", display:"block" }} />
+                    style={{width:110, height:62, borderRadius:6, objectFit:"cover", display:"block"}}/>
                 </a>
                 <div>
-                  <div style={{ fontSize:13, fontWeight:600, color:NAVY, marginBottom:6 }}>{song.title}</div>
+                  <div style={{fontSize:13, fontWeight:600, color:NAVY, marginBottom:5}}>{song.title}</div>
                   <a href={song.youtube} target="_blank" rel="noreferrer"
-                    style={{ fontSize:12, color:RED, textDecoration:"none", display:"flex", alignItems:"center", gap:5 }}>
-                    <YTIcon /> Open on YouTube
+                    style={{fontSize:12, color:RED, textDecoration:"none", display:"flex", alignItems:"center", gap:4}}>
+                    <YTIcon size={12}/> Open on YouTube
                   </a>
                 </div>
               </div>
             </div>
           )}
-
-          {/* Notes */}
           {song.notes && (
-            <div style={{ marginBottom:12 }}>
-              <div style={{ fontSize:11, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:4 }}>Team Notes</div>
-              <p style={{ fontSize:13, color:"#334", lineHeight:1.7 }}>{song.notes}</p>
+            <div style={{marginBottom:10}}>
+              <div style={{fontSize:10, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:4}}>Team Notes</div>
+              <p style={{fontSize:13, color:"#334", lineHeight:1.7, margin:0}}>{song.notes}</p>
             </div>
           )}
-
-          {/* Lyrics */}
           {song.lyrics && (
-            <div style={{ marginBottom:14 }}>
-              <div style={{ fontSize:11, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:6 }}>Lyrics / Chord Chart</div>
-              <pre style={{ fontSize:13, color:"#223", lineHeight:1.8, background:WHITE, border:`1px solid ${BORDER}`, borderRadius:8, padding:"12px 14px", fontFamily:"'Courier New', monospace" }}>{song.lyrics}</pre>
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:10, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:5}}>Lyrics / Chord Chart</div>
+              <pre style={{fontSize:12, color:"#223", lineHeight:1.8, background:WHITE, border:`1px solid ${BORDER}`, borderRadius:8, padding:"11px 13px", fontFamily:"'Courier New',monospace", margin:0}}>{song.lyrics}</pre>
             </div>
           )}
-
-          <div style={{ display:"flex", gap:8 }}>
-            <button style={{ ...s.ghost, fontSize:12, padding:"6px 14px" }} onClick={onEdit}>Edit</button>
-            <button style={{ ...s.danger, fontSize:12, padding:"6px 14px" }} onClick={onDelete}>Remove</button>
+          <div style={{display:"flex", gap:7}}>
+            <button style={{...G, fontSize:12, padding:"5px 13px"}} onClick={onEdit}>Edit</button>
+            <button style={{...G, fontSize:12, padding:"5px 13px", color:"#C0392B", borderColor:"#F5C6C6"}} onClick={onDelete}>Remove</button>
           </div>
         </div>
       )}
@@ -179,102 +187,79 @@ function SongCard({ song, index, onEdit, onDelete }) {
   );
 }
 
-// ─── Modal ───────────────────────────────────────────────────────────────────
-function SongModal({ initial, onSave, onClose }) {
-  const blank = { title:"", artist:"", key:"", tempo:"", category:CATEGORIES[0], notes:"", lyrics:"", youtube:"" };
-  const [form, setForm] = useState(initial ? { ...blank, ...initial } : blank);
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+// ── Song Modal ─────────────────────────────────────────────────
+function SongModal({initial, onSave, onClose}) {
+  const blank = {title:"", artist:"", key:"", tempo:"", category:CATEGORIES[0], notes:"", lyrics:"", youtube:""};
+  const [form, setForm] = useState(initial ? {...blank,...initial} : blank);
+  const [saving, setSaving] = useState(false);
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
   const vid = getYouTubeId(form.youtube);
 
-  function submit() {
+  async function submit() {
     if (!form.title.trim()) return;
-    onSave({ ...form, id: initial?.id || Date.now().toString(), title: form.title.trim() });
+    setSaving(true);
+    await onSave({...form, id:initial?.id||Date.now().toString(), title:form.title.trim()});
+    setSaving(false);
   }
 
   return (
-    <div onClick={e => e.target === e.currentTarget && onClose()}
-      style={{ position:"fixed", inset:0, background:"rgba(10,20,50,0.6)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
-      <div style={{ background:WHITE, borderRadius:16, width:"100%", maxWidth:520, maxHeight:"92vh", overflowY:"auto", boxShadow:"0 8px 40px rgba(0,0,0,0.3)" }}>
-
-        {/* Modal header */}
-        <div style={{ background:NAVY, borderRadius:"16px 16px 0 0", padding:"18px 24px", display:"flex", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, zIndex:1 }}>
-          <span style={{ color:WHITE, fontSize:17, fontWeight:700 }}>{initial ? "Edit Song" : "Add Song"}</span>
-          <button onClick={onClose} style={{ background:"rgba(255,255,255,0.15)", border:"none", color:WHITE, borderRadius:8, width:30, height:30, cursor:"pointer", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
+    <div onClick={e=>e.target===e.currentTarget&&onClose()}
+      style={{position:"fixed", inset:0, background:"rgba(10,20,50,0.6)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:16}}>
+      <div style={{background:WHITE, borderRadius:16, width:"100%", maxWidth:500, maxHeight:"92vh", overflowY:"auto", boxShadow:"0 8px 40px rgba(0,0,0,0.3)"}}>
+        <div style={{background:NAVY, borderRadius:"16px 16px 0 0", padding:"17px 22px", display:"flex", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, zIndex:1}}>
+          <span style={{color:WHITE, fontSize:16, fontWeight:700}}>{initial?"Edit Song":"Add Song"}</span>
+          <button onClick={onClose} style={{background:"rgba(255,255,255,0.15)", border:"none", color:WHITE, borderRadius:7, width:28, height:28, cursor:"pointer", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center"}}>×</button>
         </div>
-
-        <div style={{ padding:24, display:"flex", flexDirection:"column", gap:14 }}>
-          {/* Title */}
-          <div>
-            <label style={s.label}>Song Title *</label>
-            <input style={s.input} value={form.title} onChange={e=>set("title",e.target.value)} placeholder="e.g. Great Are You Lord" autoFocus />
+        <div style={{padding:22, display:"flex", flexDirection:"column", gap:13}}>
+          <div><label style={LB}>Song Title *</label>
+            <input style={IN} value={form.title} onChange={e=>set("title",e.target.value)} placeholder="e.g. Great Are You Lord" autoFocus/>
           </div>
-
-          {/* Artist + Category */}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-            <div>
-              <label style={s.label}>Artist / Composer</label>
-              <input style={s.input} value={form.artist} onChange={e=>set("artist",e.target.value)} placeholder="Artist name" />
-            </div>
-            <div>
-              <label style={s.label}>Category</label>
-              <select style={s.input} value={form.category} onChange={e=>set("category",e.target.value)}>
+          <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:11}}>
+            <div><label style={LB}>Artist / Composer</label><input style={IN} value={form.artist} onChange={e=>set("artist",e.target.value)} placeholder="Artist name"/></div>
+            <div><label style={LB}>Category</label>
+              <select style={IN} value={form.category} onChange={e=>set("category",e.target.value)}>
                 {CATEGORIES.map(c=><option key={c}>{c}</option>)}
               </select>
             </div>
           </div>
-
-          {/* Key + Tempo */}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-            <div>
-              <label style={s.label}>Key</label>
-              <select style={s.input} value={form.key} onChange={e=>set("key",e.target.value)}>
+          <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:11}}>
+            <div><label style={LB}>Key</label>
+              <select style={IN} value={form.key} onChange={e=>set("key",e.target.value)}>
                 <option value="">— Select —</option>
                 {KEYS.map(k=><option key={k}>{k}</option>)}
               </select>
             </div>
-            <div>
-              <label style={s.label}>Tempo (BPM)</label>
-              <input style={s.input} type="number" value={form.tempo} onChange={e=>set("tempo",e.target.value)} placeholder="e.g. 120" min={40} max={240} />
+            <div><label style={LB}>Tempo (BPM)</label>
+              <input style={IN} type="number" value={form.tempo} onChange={e=>set("tempo",e.target.value)} placeholder="e.g. 120" min={40} max={240}/>
             </div>
           </div>
-
-          {/* YouTube */}
           <div>
-            <label style={s.label}>YouTube Link</label>
-            <div style={{ position:"relative" }}>
-              <div style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", pointerEvents:"none" }}><YTIcon /></div>
-              <input style={{ ...s.input, paddingLeft:32 }} value={form.youtube}
-                onChange={e=>set("youtube",e.target.value)} placeholder="https://www.youtube.com/watch?v=..." />
+            <label style={LB}>YouTube Link</label>
+            <div style={{position:"relative"}}>
+              <div style={{position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", pointerEvents:"none"}}><YTIcon/></div>
+              <input style={{...IN, paddingLeft:32}} value={form.youtube} onChange={e=>set("youtube",e.target.value)} placeholder="https://www.youtube.com/watch?v=..."/>
             </div>
-            {form.youtube && !vid && <div style={{ fontSize:11, color:"#C0392B", marginTop:4 }}>Please paste a valid YouTube URL</div>}
+            {form.youtube && !vid && <div style={{fontSize:11, color:"#C0392B", marginTop:4}}>Please paste a valid YouTube URL</div>}
             {vid && (
-              <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:8, background:"#FFF8F8", border:"1px solid #FFCCCC", borderRadius:8, padding:"8px 10px" }}>
-                <img src={`https://img.youtube.com/vi/${vid}/default.jpg`} alt="" style={{ width:60, height:34, borderRadius:4, objectFit:"cover" }} />
-                <span style={{ fontSize:12, color:RED, fontWeight:600 }}>Video linked ✓</span>
+              <div style={{display:"flex", alignItems:"center", gap:10, marginTop:7, background:"#FFF8F8", border:"1px solid #FFCCCC", borderRadius:8, padding:"7px 10px"}}>
+                <img src={`https://img.youtube.com/vi/${vid}/default.jpg`} alt="" style={{width:56, height:32, borderRadius:4, objectFit:"cover"}}/>
+                <span style={{fontSize:12, color:RED, fontWeight:700}}>Video linked ✓</span>
               </div>
             )}
           </div>
-
-          {/* Notes */}
-          <div>
-            <label style={s.label}>Team Notes</label>
-            <textarea style={{ ...s.input, resize:"vertical", minHeight:70 }} value={form.notes}
-              onChange={e=>set("notes",e.target.value)} placeholder="Arrangement notes, key changes, transitions, special instructions…" />
+          <div><label style={LB}>Team Notes</label>
+            <textarea style={{...IN, resize:"vertical", minHeight:65}} value={form.notes} onChange={e=>set("notes",e.target.value)} placeholder="Key changes, transitions, special instructions…"/>
           </div>
-
-          {/* Lyrics */}
-          <div>
-            <label style={s.label}>Lyrics / Chord Chart</label>
-            <textarea style={{ ...s.input, resize:"vertical", minHeight:120, fontFamily:"'Courier New', monospace", fontSize:13, lineHeight:1.7 }}
+          <div><label style={LB}>Lyrics / Chord Chart</label>
+            <textarea style={{...IN, resize:"vertical", minHeight:110, fontFamily:"'Courier New',monospace", fontSize:12, lineHeight:1.7}}
               value={form.lyrics} onChange={e=>set("lyrics",e.target.value)}
-              placeholder={"[Verse 1]\nPaste lyrics or chord chart here…\n\n[Chorus]\n…"} />
+              placeholder={"[Verse 1]\nPaste lyrics or chord chart here…\n\n[Chorus]\n…"}/>
           </div>
-
-          {/* Actions */}
-          <div style={{ display:"flex", gap:10, justifyContent:"flex-end", paddingTop:4 }}>
-            <button style={s.ghost} onClick={onClose}>Cancel</button>
-            <button style={{ ...s.btn, opacity: form.title.trim() ? 1 : 0.45 }} onClick={submit} disabled={!form.title.trim()}>
-              {initial ? "Save Changes" : "Add Song"}
+          <div style={{display:"flex", gap:9, justifyContent:"flex-end", paddingTop:4}}>
+            <button style={G} onClick={onClose}>Cancel</button>
+            <button style={{...B, background:NAVY, color:WHITE, opacity:form.title.trim()&&!saving?1:0.45}}
+              onClick={submit} disabled={!form.title.trim()||saving}>
+              {saving?"Saving…":initial?"Save Changes":"Add Song"}
             </button>
           </div>
         </div>
@@ -283,176 +268,294 @@ function SongModal({ initial, onSave, onClose }) {
   );
 }
 
-// ─── App ─────────────────────────────────────────────────────────────────────
-function App() {
-  const [songs, setSongs] = useState({});
-  const [week, setWeek] = useState(getSundayOfWeek(new Date()));
-  const [modal, setModal] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [search, setSearch] = useState("");
-  const [catFilter, setCatFilter] = useState("All");
-  const [toast, setToast] = useState(null);
+// ── Team Schedule ──────────────────────────────────────────────
+function TeamSchedule({week, sched, onSave}) {
+  const [form, setForm]     = useState(sched[week] || {});
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved]   = useState(true);
 
-  // Load from localStorage
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setSongs(JSON.parse(raw));
-    } catch {}
-  }, []);
+  useEffect(()=>{ setForm(sched[week]||{}); setSaved(true); }, [week, sched]);
 
-  const persist = useCallback((data) => {
-    setSongs(data);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
-    catch { notify("Could not save — storage may be full", "error"); }
-  }, []);
+  const set = (k,v) => { setForm(f=>({...f,[k]:v})); setSaved(false); };
+  const filled = ROLES.filter(r => form[r.key]?.trim());
 
-  const notify = (msg, type="success") => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  const weekList = (songs[week] || []).filter(s => {
-    const q = search.toLowerCase();
-    return (!q || s.title.toLowerCase().includes(q) || (s.artist||"").toLowerCase().includes(q))
-      && (catFilter === "All" || s.category === catFilter);
-  });
-
-  const allWeeks = Object.keys(songs).sort().reverse();
-  const isThisWeek = week === getSundayOfWeek(new Date());
-
-  function shiftWeek(n) {
-    const d = new Date(week);
-    d.setDate(d.getDate() + n * 7);
-    setWeek(d.toISOString().split("T")[0]);
-  }
-
-  function openAdd() { setEditing(null); setModal(true); }
-  function openEdit(song) { setEditing(song); setModal(true); }
-  function closeModal() { setModal(false); setEditing(null); }
-
-  function handleSave(song) {
-    const list = [...(songs[week] || [])];
-    if (editing) {
-      const i = list.findIndex(s => s.id === editing.id);
-      if (i > -1) list[i] = song; else list.push(song);
-    } else { list.push(song); }
-    persist({ ...songs, [week]: list });
-    closeModal();
-    notify(editing ? "Song updated!" : "Song added!");
-  }
-
-  function handleDelete(id) {
-    const list = (songs[week] || []).filter(s => s.id !== id);
-    persist({ ...songs, [week]: list });
-    notify("Song removed", "info");
+  async function save() {
+    setSaving(true);
+    await onSave(week, form);
+    setSaving(false); setSaved(true);
   }
 
   return (
-    <div style={{ minHeight:"100vh", background:LIGHT }}>
+    <div>
+      {filled.length > 0 && (
+        <div style={{background:WHITE, border:`1px solid ${BORDER}`, borderRadius:12, padding:"14px 16px", marginBottom:20}}>
+          <div style={{fontSize:10, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.6px", marginBottom:10}}>This Week's Team</div>
+          <div style={{display:"flex", flexWrap:"wrap", gap:8}}>
+            {filled.map(r=>(
+              <div key={r.key} style={{background:LIGHT, border:`1px solid ${BORDER}`, borderRadius:20, padding:"6px 14px", display:"flex", alignItems:"center", gap:8}}>
+                <span style={{fontSize:18}}>{r.icon}</span>
+                <div>
+                  <div style={{fontSize:9, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.4px"}}>{r.label}</div>
+                  <div style={{fontSize:13, fontWeight:700, color:NAVY}}>{form[r.key]}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(230px,1fr))", gap:12, marginBottom:18}}>
+        {ROLES.map(r=>(
+          <div key={r.key} style={{background:WHITE, borderRadius:12, border:`1px solid ${BORDER}`, padding:"14px 15px"}}>
+            <div style={{display:"flex", alignItems:"center", gap:9, marginBottom:9}}>
+              <div style={{width:34, height:34, borderRadius:8, background:NAVY+"15", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0}}>{r.icon}</div>
+              <label style={{...LB, margin:0, fontSize:12}}>{r.label}</label>
+            </div>
+            <input style={{...IN, fontSize:13}} value={form[r.key]||""} onChange={e=>set(r.key,e.target.value)} placeholder="Enter name…"/>
+          </div>
+        ))}
+      </div>
+      <div style={{display:"flex", alignItems:"center", gap:12}}>
+        <button style={{...B, background:NAVY, color:WHITE, opacity:saving?0.6:1}} onClick={save} disabled={saving}>
+          {saving?"Saving…":"Save Schedule"}
+        </button>
+        {saved && filled.length>0 && <span style={{fontSize:13, color:"#1A7F55", fontWeight:600}}>✓ Saved</span>}
+        {!saved && <span style={{fontSize:13, color:GOLD, fontWeight:600}}>● Unsaved changes</span>}
+      </div>
+      {filled.length===0 && (
+        <div style={{textAlign:"center", padding:"50px 0", color:MUTED}}>
+          <div style={{fontSize:40, opacity:0.2, marginBottom:10}}>👥</div>
+          <div style={{fontWeight:700, fontSize:15, color:NAVY, marginBottom:4}}>No team assigned yet</div>
+          <div style={{fontSize:13}}>Fill in the names above and tap Save Schedule.</div>
+        </div>
+      )}
+    </div>
+  );
+}
 
-      {/* ── Header ── */}
-      <div style={{ background:"linear-gradient(135deg, #1B3A6B 0%, #2a4f8f 100%)" }}>
-        <div style={{ maxWidth:860, margin:"0 auto", padding:"20px 20px 0" }}>
+// ── App ────────────────────────────────────────────────────────
+function App() {
+  const [songs,    setSongs]   = useState({});
+  const [sched,    setSched]   = useState({});
+  const [week,     setWeek]    = useState(getSunday(new Date()));
+  const [tab,      setTab]     = useState("songs");
+  const [modal,    setModal]   = useState(false);
+  const [editing,  setEditing] = useState(null);
+  const [search,   setSearch]  = useState("");
+  const [catFilter,setCat]     = useState("All");
+  const [toast,    setToast]   = useState(null);
+  const [status,   setStatus]  = useState("connecting");
+
+  const notify = (msg, type="success") => { setToast({msg,type}); setTimeout(()=>setToast(null),3500); };
+
+  // Real-time Firebase listeners
+  useEffect(()=>{
+    if (!db) { setStatus("error"); return; }
+
+    const songsRef = db.ref("songs");
+    const schedRef = db.ref("schedule");
+
+    songsRef.on("value", snap=>{
+      const val = snap.val() || {};
+      const out = {};
+      Object.keys(val).forEach(k=>{
+        const dateKey = k.replace(/^w/, "").replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3");
+        out[dateKey] = Object.values(val[k] || {});
+      });
+      setSongs(out);
+      setStatus("online");
+    }, ()=>setStatus("error"));
+
+    schedRef.on("value", snap=>{
+      const val = snap.val() || {};
+      const out = {};
+      Object.keys(val).forEach(k=>{
+        const dateKey = k.replace(/^w/, "").replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3");
+        out[dateKey] = val[k];
+      });
+      setSched(out);
+    });
+
+    return ()=>{ songsRef.off(); schedRef.off(); };
+  },[]);
+
+  async function saveSongs(w, list) {
+    if (!db) return;
+    const obj = {};
+    list.forEach(s=>{ obj[s.id] = s; });
+    await db.ref(`songs/${weekKey(w)}`).set(list.length ? obj : null);
+  }
+
+  async function saveSched(w, data) {
+    if (!db) return;
+    await db.ref(`schedule/${weekKey(w)}`).set(data);
+    notify("Team schedule saved!");
+  }
+
+  const isThisWeek = week===getSunday(new Date());
+  const allWeeks = [...new Set([...Object.keys(songs),...Object.keys(sched)])].sort().reverse();
+
+  function shiftWeek(n){ const d=new Date(week); d.setDate(d.getDate()+n*7); setWeek(d.toISOString().split("T")[0]); }
+
+  const weekSongs = (songs[week]||[]).filter(s=>{
+    const q=search.toLowerCase();
+    return (!q||s.title.toLowerCase().includes(q)||(s.artist||"").toLowerCase().includes(q))
+      &&(catFilter==="All"||s.category===catFilter);
+  });
+
+  async function handleSongSave(song){
+    const list=[...(songs[week]||[])];
+    if(editing){ const i=list.findIndex(s=>s.id===editing.id); if(i>-1)list[i]=song; else list.push(song); }
+    else list.push(song);
+    await saveSongs(week, list);
+    setModal(false); setEditing(null);
+    notify(editing?"Song updated!":"Song added! 🎵");
+  }
+
+  async function handleDelete(song){
+    const list=(songs[week]||[]).filter(s=>s.id!==song.id);
+    await saveSongs(week, list);
+    notify("Song removed");
+  }
+
+  const statusDot = { online:"#4ADE80", error:"#F87171", connecting:"#FCD34D" }[status];
+  const statusText = { online:"Live", error:"Offline", connecting:"Connecting…" }[status];
+
+  return (
+    <div style={{fontFamily:"'Segoe UI',system-ui,sans-serif", background:LIGHT, minHeight:"100vh", color:"#1a2744"}}>
+
+      <div style={{background:"linear-gradient(135deg,#1B3A6B 0%,#2a4f8f 100%)"}}>
+        <div style={{maxWidth:860, margin:"0 auto", padding:"18px 18px 0"}}>
 
           {/* Brand */}
-          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
-            <div style={{ width:40, height:40, borderRadius:10, background:GOLD, display:"flex", alignItems:"center", justifyContent:"center" }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <div style={{display:"flex", alignItems:"center", gap:13, marginBottom:14}}>
+            <div style={{width:42, height:42, borderRadius:10, background:GOLD, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0}}>
+              <svg width="23" height="23" viewBox="0 0 24 24" fill="none">
                 <path d="M9 18V5l12-2v13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 <circle cx="6" cy="18" r="3" stroke="white" strokeWidth="2"/>
                 <circle cx="18" cy="16" r="3" stroke="white" strokeWidth="2"/>
               </svg>
             </div>
-            <div>
-              <h1 style={{ color:WHITE, fontSize:20, fontWeight:800, letterSpacing:"0.2px", lineHeight:1.2 }}>Worship Song Hub</h1>
-              <p style={{ color:"rgba(255,255,255,0.55)", fontSize:12 }}>Music Team · Weekly Planner</p>
+            <div style={{flex:1}}>
+              <div style={{color:WHITE, fontSize:18, fontWeight:800, lineHeight:1.2}}>UCC Pasay Music Team Hub</div>
+              <div style={{color:GOLD, fontSize:11, fontWeight:600}}>United Christian Church of the Philippines · Pasay City</div>
+            </div>
+            <div style={{display:"flex", alignItems:"center", gap:5, flexShrink:0}}>
+              <div style={{width:8, height:8, borderRadius:"50%", background:statusDot}}/>
+              <span style={{fontSize:11, color:"rgba(255,255,255,0.6)", fontWeight:500}}>{statusText}</span>
             </div>
           </div>
 
           {/* Week nav */}
-          <div style={{ display:"flex", alignItems:"center", gap:10, padding:"14px 0 0", borderTop:"1px solid rgba(255,255,255,0.12)" }}>
-            <button onClick={()=>shiftWeek(-1)} style={{ ...s.ghost, color:"rgba(255,255,255,0.75)", borderColor:"rgba(255,255,255,0.25)", padding:"6px 14px", fontSize:13 }}>← Prev</button>
-            <div style={{ flex:1, textAlign:"center" }}>
-              <div style={{ color:GOLD, fontSize:10, fontWeight:800, letterSpacing:"1.2px", textTransform:"uppercase" }}>
-                {isThisWeek ? "This Sunday" : "Sunday Service"}
-              </div>
-              <div style={{ color:WHITE, fontSize:15, fontWeight:600 }}>{weekLabel(week)}</div>
+          <div style={{display:"flex", alignItems:"center", gap:10, padding:"13px 0 0", borderTop:"1px solid rgba(255,255,255,0.12)"}}>
+            <button onClick={()=>shiftWeek(-1)} style={{...G, color:"rgba(255,255,255,0.75)", borderColor:"rgba(255,255,255,0.25)", padding:"5px 13px", fontSize:12}}>← Prev</button>
+            <div style={{flex:1, textAlign:"center"}}>
+              <div style={{color:GOLD, fontSize:10, fontWeight:800, letterSpacing:"1.2px", textTransform:"uppercase"}}>{isThisWeek?"This Sunday":"Sunday Service"}</div>
+              <div style={{color:WHITE, fontSize:14, fontWeight:600}}>{weekLabel(week)}</div>
             </div>
-            <button onClick={()=>shiftWeek(1)} style={{ ...s.ghost, color:"rgba(255,255,255,0.75)", borderColor:"rgba(255,255,255,0.25)", padding:"6px 14px", fontSize:13 }}>Next →</button>
+            <button onClick={()=>shiftWeek(1)} style={{...G, color:"rgba(255,255,255,0.75)", borderColor:"rgba(255,255,255,0.25)", padding:"5px 13px", fontSize:12}}>Next →</button>
           </div>
 
-          {/* Week tabs */}
-          {allWeeks.length > 1 && (
-            <div style={{ display:"flex", gap:6, overflowX:"auto", padding:"10px 0 0", scrollbarWidth:"none" }}>
-              {allWeeks.slice(0,10).map(w => (
-                <button key={w} onClick={()=>setWeek(w)} style={{
-                  background: w===week ? GOLD : "rgba(255,255,255,0.12)",
-                  color:WHITE, border:"none", borderRadius:6, padding:"4px 13px",
-                  fontSize:12, cursor:"pointer", whiteSpace:"nowrap", fontWeight: w===week ? 700 : 400,
-                }}>
+          {allWeeks.length>1 && (
+            <div style={{display:"flex", gap:5, overflowX:"auto", padding:"9px 0 0", scrollbarWidth:"none"}}>
+              {allWeeks.slice(0,10).map(w=>(
+                <button key={w} onClick={()=>setWeek(w)}
+                  style={{background:w===week?GOLD:"rgba(255,255,255,0.12)", color:WHITE, border:"none", borderRadius:6, padding:"3px 12px", fontSize:11, cursor:"pointer", whiteSpace:"nowrap", fontWeight:w===week?700:400}}>
                   {new Date(w).toLocaleDateString("en-US",{month:"short",day:"numeric"})}
                 </button>
               ))}
             </div>
           )}
-          <div style={{ height:14 }} />
+
+          {/* Tabs */}
+          <div style={{display:"flex", gap:2, marginTop:14}}>
+            {[{id:"songs",label:"🎵  Songs"},{id:"schedule",label:"👥  Team Schedule"}].map(t=>(
+              <button key={t.id} onClick={()=>setTab(t.id)} style={{
+                background:tab===t.id?"rgba(255,255,255,0.15)":"transparent",
+                color:tab===t.id?WHITE:"rgba(255,255,255,0.5)",
+                border:"none", borderRadius:"8px 8px 0 0",
+                padding:"9px 20px", fontWeight:tab===t.id?700:500,
+                fontSize:13, cursor:"pointer",
+                borderBottom:tab===t.id?`2.5px solid ${GOLD}`:"2.5px solid transparent",
+              }}>{t.label}</button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* ── Body ── */}
-      <div style={{ maxWidth:860, margin:"0 auto", padding:"20px 20px" }}>
+      {/* Body */}
+      <div style={{maxWidth:860, margin:"0 auto", padding:"20px 18px"}}>
 
-        {/* Toolbar */}
-        <div style={{ display:"flex", gap:10, marginBottom:16, flexWrap:"wrap" }}>
-          <input style={{ ...s.input, width:"auto", flex:"1 1 160px", maxWidth:260 }}
-            placeholder="Search song or artist…" value={search} onChange={e=>setSearch(e.target.value)} />
-          <select style={{ ...s.input, width:"auto", flex:"0 0 auto" }} value={catFilter} onChange={e=>setCatFilter(e.target.value)}>
-            <option value="All">All Categories</option>
-            {CATEGORIES.map(c=><option key={c}>{c}</option>)}
-          </select>
-          <button style={{ ...s.gold, marginLeft:"auto" }} onClick={openAdd}>+ Add Song</button>
-        </div>
-
-        {/* Stats */}
-        <div style={{ display:"flex", gap:10, marginBottom:20, flexWrap:"wrap" }}>
-          {[
-            { label:"Songs This Week", val:(songs[week]||[]).length },
-            { label:"With YouTube", val:(songs[week]||[]).filter(s=>getYouTubeId(s.youtube)).length },
-            { label:"Weeks Logged", val:allWeeks.length },
-          ].map(m=>(
-            <div key={m.label} style={{ background:WHITE, borderRadius:10, border:`1px solid ${BORDER}`, padding:"10px 18px", minWidth:110 }}>
-              <div style={{ fontSize:24, fontWeight:800, color:NAVY }}>{m.val}</div>
-              <div style={{ fontSize:11, color:MUTED, fontWeight:600, marginTop:1 }}>{m.label}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Song list */}
-        {weekList.length === 0 ? (
-          <div style={{ textAlign:"center", padding:"70px 0", color:MUTED }}>
-            <div style={{ fontSize:48, opacity:0.2, marginBottom:14 }}>♪</div>
-            <div style={{ fontWeight:700, fontSize:17, marginBottom:6, color:NAVY }}>No songs for this Sunday yet</div>
-            <div style={{ fontSize:13, marginBottom:24 }}>Add the songs your team will lead this week.</div>
-            <button style={s.btn} onClick={openAdd}>Add First Song</button>
+        {status==="connecting" && (
+          <div style={{background:"#FEF9C3", border:"1px solid #FDE047", borderRadius:10, padding:"12px 16px", marginBottom:16, fontSize:13, color:"#854D0E", fontWeight:500}}>
+            ⏳ Connecting to database…
           </div>
-        ) : (
-          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-            {weekList.map((song, i) => (
-              <SongCard key={song.id} song={song} index={i}
-                onEdit={()=>openEdit(song)} onDelete={()=>handleDelete(song.id)} />
+        )}
+        {status==="error" && (
+          <div style={{background:"#FEE2E2", border:"1px solid #FCA5A5", borderRadius:10, padding:"12px 16px", marginBottom:16, fontSize:13, color:"#991B1B", fontWeight:500}}>
+            ⚠️ Cannot connect to Firebase. Please check your internet connection and try again.
+          </div>
+        )}
+
+        {tab==="songs" && <>
+          <div style={{display:"flex", gap:9, marginBottom:14, flexWrap:"wrap"}}>
+            <input style={{...IN, width:"auto", flex:"1 1 150px", maxWidth:250}}
+              placeholder="Search song or artist…" value={search} onChange={e=>setSearch(e.target.value)}/>
+            <select style={{...IN, width:"auto"}} value={catFilter} onChange={e=>setCat(e.target.value)}>
+              <option value="All">All Categories</option>
+              {CATEGORIES.map(c=><option key={c}>{c}</option>)}
+            </select>
+            <button style={{...B, background:GOLD, color:WHITE, marginLeft:"auto"}}
+              onClick={()=>{setEditing(null);setModal(true);}}>+ Add Song</button>
+          </div>
+
+          <div style={{display:"flex", gap:9, marginBottom:18, flexWrap:"wrap"}}>
+            {[
+              {label:"Songs This Week", val:(songs[week]||[]).length},
+              {label:"With YouTube",    val:(songs[week]||[]).filter(s=>getYouTubeId(s.youtube)).length},
+              {label:"Weeks Logged",    val:allWeeks.length},
+            ].map(m=>(
+              <div key={m.label} style={{background:WHITE, borderRadius:10, border:`1px solid ${BORDER}`, padding:"9px 16px", minWidth:105}}>
+                <div style={{fontSize:22, fontWeight:800, color:NAVY}}>{m.val}</div>
+                <div style={{fontSize:10, color:MUTED, fontWeight:700, marginTop:1}}>{m.label}</div>
+              </div>
             ))}
           </div>
+
+          {weekSongs.length===0 ? (
+            <div style={{textAlign:"center", padding:"60px 0", color:MUTED}}>
+              <div style={{fontSize:44, opacity:0.2, marginBottom:12}}>♪</div>
+              <div style={{fontWeight:700, fontSize:16, marginBottom:5, color:NAVY}}>No songs for this Sunday yet</div>
+              <div style={{fontSize:13, marginBottom:22}}>Add the songs your team will lead this week.</div>
+              <button style={{...B, background:NAVY, color:WHITE}} onClick={()=>{setEditing(null);setModal(true);}}>Add First Song</button>
+            </div>
+          ):(
+            <div style={{display:"flex", flexDirection:"column", gap:9}}>
+              {weekSongs.map((song,i)=>(
+                <SongCard key={song.id} song={song} index={i}
+                  onEdit={()=>{setEditing(song);setModal(true);}}
+                  onDelete={()=>handleDelete(song)}/>
+              ))}
+            </div>
+          )}
+        </>}
+
+        {tab==="schedule" && (
+          <TeamSchedule week={week} sched={sched} onSave={saveSched}/>
         )}
       </div>
 
-      {modal && <SongModal initial={editing} onSave={handleSave} onClose={closeModal} />}
-      <Toast toast={toast} />
+      {modal && <SongModal initial={editing} onSave={handleSongSave} onClose={()=>{setModal(false);setEditing(null);}}/>}
+
+      {toast && (
+        <div style={{position:"fixed", bottom:22, right:22, background:toast.type==="error"?"#C0392B":NAVY, color:WHITE, borderRadius:10, padding:"11px 18px", fontSize:13, fontWeight:700, zIndex:9999, boxShadow:"0 4px 20px rgba(0,0,0,0.2)", maxWidth:300}}>
+          {toast.msg}
+        </div>
+      )}
     </div>
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 </body>
 </html>
