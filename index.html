@@ -500,6 +500,10 @@ function App() {
   const [sched,    setSched]   = useState({});
   const [week,     setWeek]    = useState(getSunday(new Date()));
   const [tab,      setTab]     = useState("calendar");
+  const [modal,    setModal]   = useState(false);
+  const [editing,  setEditing] = useState(null);
+  const [search,   setSearch]  = useState("");
+  const [catFilter,setCat]     = useState("All");
   const [toast,    setToast]   = useState(null);
   const [status,   setStatus]  = useState("connecting");
 
@@ -539,9 +543,26 @@ function App() {
   const isThisWeek = week === thisWeek;
   const allWeeks = [...new Set([...Object.keys(songs),...Object.keys(sched)])].sort().reverse();
 
+  const weekSongs = (songs[week]||[]).filter(s=>{
+    const q=search.toLowerCase();
+    return (!q||s.title.toLowerCase().includes(q)||(s.artist||"").toLowerCase().includes(q))
+      &&(catFilter==="All"||s.category===catFilter);
+  });
+
+  async function handleSongSave(song){
+    const list=[...(songs[week]||[])];
+    if(editing){ const i=list.findIndex(s=>s.id===editing.id); if(i>-1)list[i]=song; else list.push(song); }
+    else list.push(song);
+    await saveSongs(week,list);
+    setModal(false); setEditing(null);
+    notify(editing?"Song updated!":"Song added! 🎵");
+  }
+
   const TABS = [
     {id:"calendar",  label:"📅 Monthly View"},
     {id:"overview",  label:"📋 Sunday Schedule"},
+    {id:"songs",     label:"🎵 Manage Songs"},
+    {id:"schedule",  label:"👥 Assign Team"},
   ];
 
   const statusDot  = {online:"#4ADE80",error:"#F87171",connecting:"#FCD34D"}[status];
@@ -626,7 +647,48 @@ function App() {
 
         {/* Sunday Schedule Tab */}
         {tab==="overview" && <Overview week={week} songs={songs} sched={sched}/>}
+
+        {/* Manage Songs Tab */}
+        {tab==="songs" && <>
+          <div style={{display:"flex", gap:9, marginBottom:14, flexWrap:"wrap"}}>
+            <input style={{...IN, width:"auto", flex:"1 1 150px", maxWidth:250}} placeholder="Search song or artist…" value={search} onChange={e=>setSearch(e.target.value)}/>
+            <select style={{...IN, width:"auto"}} value={catFilter} onChange={e=>setCat(e.target.value)}>
+              <option value="All">All Categories</option>
+              {CATEGORIES.map(c=><option key={c}>{c}</option>)}
+            </select>
+            <button style={{...B, background:GOLD, color:WHITE, marginLeft:"auto"}} onClick={()=>{setEditing(null);setModal(true);}}>+ Add Song</button>
+          </div>
+          <div style={{display:"flex", gap:9, marginBottom:18, flexWrap:"wrap"}}>
+            {[{label:"Songs This Week",val:(songs[week]||[]).length},{label:"With YouTube",val:(songs[week]||[]).filter(s=>getYouTubeId(s.youtube)).length},{label:"Weeks Logged",val:allWeeks.length}].map(m=>(
+              <div key={m.label} style={{background:WHITE, borderRadius:10, border:`1px solid ${BORDER}`, padding:"9px 16px", minWidth:105}}>
+                <div style={{fontSize:22, fontWeight:800, color:NAVY}}>{m.val}</div>
+                <div style={{fontSize:10, color:MUTED, fontWeight:700, marginTop:1}}>{m.label}</div>
+              </div>
+            ))}
+          </div>
+          {weekSongs.length===0 ? (
+            <div style={{textAlign:"center", padding:"60px 0", color:MUTED}}>
+              <div style={{fontSize:44, opacity:0.2, marginBottom:12}}>♪</div>
+              <div style={{fontWeight:700, fontSize:16, marginBottom:5, color:NAVY}}>No songs for this Sunday yet</div>
+              <div style={{fontSize:13, marginBottom:22}}>Add the songs your team will lead this week.</div>
+              <button style={{...B, background:NAVY, color:WHITE}} onClick={()=>{setEditing(null);setModal(true);}}>Add First Song</button>
+            </div>
+          ):(
+            <div style={{display:"flex", flexDirection:"column", gap:9}}>
+              {weekSongs.map((song,i)=>(
+                <SongCard key={song.id} song={song} index={i}
+                  onEdit={()=>{setEditing(song);setModal(true);}}
+                  onDelete={async()=>{ const list=(songs[week]||[]).filter(s=>s.id!==song.id); await saveSongs(week,list); notify("Song removed","info"); }}/>
+              ))}
+            </div>
+          )}
+        </>}
+
+        {/* Assign Team Tab */}
+        {tab==="schedule" && <TeamSchedule week={week} sched={sched} onSave={saveSched}/>}
       </div>
+
+      {modal && <SongModal initial={editing} onSave={handleSongSave} onClose={()=>{setModal(false);setEditing(null);}}/>}
 
       {toast && (
         <div style={{position:"fixed", bottom:22, right:22, background:toast.type==="error"?"#C0392B":NAVY, color:WHITE, borderRadius:10, padding:"11px 18px", fontSize:13, fontWeight:700, zIndex:9999, boxShadow:"0 4px 20px rgba(0,0,0,0.2)", maxWidth:300}}>
