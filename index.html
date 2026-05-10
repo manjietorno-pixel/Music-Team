@@ -109,8 +109,124 @@ function keyToDate(k) {
   return `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}`;
 }
 
+// Returns all Sunday date strings in a given year/month (local time safe)
+function getSundaysInMonth(year, month) {
+  const sundays = [];
+  const d = new Date(year, month, 1);
+  // advance to first Sunday
+  d.setDate(d.getDate() + ((7 - d.getDay()) % 7));
+  while (d.getMonth() === month) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    const day = String(d.getDate()).padStart(2,"0");
+    sundays.push(`${y}-${m}-${day}`);
+    d.setDate(d.getDate()+7);
+  }
+  return sundays;
+}
+
+function monthLabel(year, month) {
+  return new Date(year, month, 1).toLocaleDateString("en-US",{month:"long",year:"numeric"});
+}
+
 function YTIcon({size=14}) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{display:"block",flexShrink:0}}><rect x="2" y="5" width="20" height="14" rx="3" fill={RED}/><polygon points="10,8.5 16,12 10,15.5" fill="white"/></svg>;
+}
+
+// ── Monthly Calendar Tab ───────────────────────────────────────
+function MonthCalendar({songs, sched, onSelectWeek}) {
+  const today = new Date();
+  const [calYear,  setCalYear]  = useState(today.getFullYear());
+  const [calMonth, setCalMonth] = useState(today.getMonth());
+
+  function shiftMonth(n) {
+    let m = calMonth + n, y = calYear;
+    if (m > 11) { m = 0; y++; }
+    if (m < 0)  { m = 11; y--; }
+    setCalMonth(m); setCalYear(y);
+  }
+
+  const sundays  = getSundaysInMonth(calYear, calMonth);
+  const todayStr = getSunday(today);
+
+  return (
+    <div>
+      {/* Month nav */}
+      <div style={{display:"flex", alignItems:"center", gap:10, marginBottom:18}}>
+        <button onClick={()=>shiftMonth(-1)} style={{...G, padding:"6px 14px"}}>← Prev</button>
+        <div style={{flex:1, textAlign:"center", fontWeight:800, fontSize:16, color:NAVY}}>{monthLabel(calYear,calMonth)}</div>
+        <button onClick={()=>shiftMonth(1)}  style={{...G, padding:"6px 14px"}}>Next →</button>
+      </div>
+
+      {/* Sunday cards */}
+      <div style={{display:"flex", flexDirection:"column", gap:12}}>
+        {sundays.map(w => {
+          const team      = sched[w] || {};
+          const songList  = songs[w] || [];
+          const filled    = ROLES.filter(r => team[r.key]?.trim());
+          const isToday   = w === todayStr;
+
+          return (
+            <div key={w}
+              onClick={()=>onSelectWeek(w)}
+              style={{background:WHITE, borderRadius:14, border:`2px solid ${isToday?GOLD:BORDER}`, overflow:"hidden", cursor:"pointer", boxShadow:isToday?"0 2px 12px rgba(201,168,76,0.2)":"none"}}>
+
+              {/* Card header */}
+              <div style={{background:isToday?`linear-gradient(90deg,${NAVY},#2a4f8f)`:LIGHT, padding:"10px 15px", display:"flex", alignItems:"center", justifyContent:"space-between"}}>
+                <div>
+                  <div style={{fontSize:10, fontWeight:800, color:isToday?GOLD:MUTED, textTransform:"uppercase", letterSpacing:"1px"}}>
+                    {isToday?"This Sunday":"Sunday"}
+                  </div>
+                  <div style={{fontSize:15, fontWeight:800, color:isToday?WHITE:NAVY}}>{weekLabel(w)}</div>
+                </div>
+                <div style={{display:"flex", gap:7, alignItems:"center"}}>
+                  {songList.length > 0 && (
+                    <span style={{fontSize:11, background:isToday?"rgba(255,255,255,0.15)":"#E8F4FD", color:isToday?WHITE:"#2563EB", borderRadius:6, padding:"2px 9px", fontWeight:700}}>
+                      🎵 {songList.length} song{songList.length!==1?"s":""}
+                    </span>
+                  )}
+                  <span style={{fontSize:12, color:isToday?"rgba(255,255,255,0.6)":MUTED}}>→</span>
+                </div>
+              </div>
+
+              {/* Team assignments */}
+              <div style={{padding:"10px 14px"}}>
+                {filled.length === 0 ? (
+                  <div style={{fontSize:12, color:MUTED, fontStyle:"italic"}}>No team assigned yet</div>
+                ) : (
+                  <div style={{display:"flex", flexWrap:"wrap", gap:6}}>
+                    {filled.map(r=>(
+                      <div key={r.key} style={{display:"flex", alignItems:"center", gap:5, background:LIGHT, borderRadius:8, padding:"4px 10px", border:`1px solid ${BORDER}`}}>
+                        <span style={{fontSize:13}}>{r.icon}</span>
+                        <div>
+                          <div style={{fontSize:9, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.3px"}}>{r.label}</div>
+                          <div style={{fontSize:12, fontWeight:700, color:NAVY}}>{team[r.key]}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {/* Song preview */}
+                {songList.length > 0 && (
+                  <div style={{marginTop:8, paddingTop:8, borderTop:`1px solid ${BORDER}`, display:"flex", flexWrap:"wrap", gap:5}}>
+                    {songList.slice(0,4).map((s,i)=>{
+                      const color = CAT_COLORS[s.category]||MUTED;
+                      return (
+                        <span key={s.id} style={{fontSize:11, background:color+"18", color, borderRadius:5, padding:"2px 8px", fontWeight:600}}>
+                          {i+1}. {s.title}
+                        </span>
+                      );
+                    })}
+                    {songList.length > 4 && <span style={{fontSize:11, color:MUTED}}>+{songList.length-4} more</span>}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 // ── Overview Tab ───────────────────────────────────────────────
@@ -383,11 +499,7 @@ function App() {
   const [songs,    setSongs]   = useState({});
   const [sched,    setSched]   = useState({});
   const [week,     setWeek]    = useState(getSunday(new Date()));
-  const [tab,      setTab]     = useState("overview");
-  const [modal,    setModal]   = useState(false);
-  const [editing,  setEditing] = useState(null);
-  const [search,   setSearch]  = useState("");
-  const [catFilter,setCat]     = useState("All");
+  const [tab,      setTab]     = useState("calendar");
   const [toast,    setToast]   = useState(null);
   const [status,   setStatus]  = useState("connecting");
 
@@ -427,25 +539,9 @@ function App() {
   const isThisWeek = week === thisWeek;
   const allWeeks = [...new Set([...Object.keys(songs),...Object.keys(sched)])].sort().reverse();
 
-  const weekSongs = (songs[week]||[]).filter(s=>{
-    const q=search.toLowerCase();
-    return (!q||s.title.toLowerCase().includes(q)||(s.artist||"").toLowerCase().includes(q))
-      &&(catFilter==="All"||s.category===catFilter);
-  });
-
-  async function handleSongSave(song){
-    const list=[...(songs[week]||[])];
-    if(editing){ const i=list.findIndex(s=>s.id===editing.id); if(i>-1)list[i]=song; else list.push(song); }
-    else list.push(song);
-    await saveSongs(week,list);
-    setModal(false); setEditing(null);
-    notify(editing?"Song updated!":"Song added! 🎵");
-  }
-
   const TABS = [
-    {id:"overview", label:"📋 This Sunday"},
-    {id:"songs",    label:"🎵 Songs"},
-    {id:"schedule", label:"👥 Schedule"},
+    {id:"calendar",  label:"📅 Monthly View"},
+    {id:"overview",  label:"📋 Sunday Schedule"},
   ];
 
   const statusDot  = {online:"#4ADE80",error:"#F87171",connecting:"#FCD34D"}[status];
@@ -469,7 +565,7 @@ function App() {
             </div>
             <div style={{flex:1}}>
               <div style={{color:WHITE, fontSize:18, fontWeight:800, lineHeight:1.2}}>UCC Pasay Music Team Hub</div>
-              <div style={{color:GOLD, fontSize:11, fontWeight:600}}>United Christian Church of the Philippines · Pasay City</div>
+              <div style={{color:GOLD, fontSize:11, fontWeight:600}}>Universal Church of Christ Incorporated · Pasay City</div>
             </div>
             <div style={{display:"flex", alignItems:"center", gap:5, flexShrink:0}}>
               <div style={{width:8, height:8, borderRadius:"50%", background:statusDot}}/>
@@ -523,50 +619,14 @@ function App() {
         {status==="connecting" && <div style={{background:"#FEF9C3", border:"1px solid #FDE047", borderRadius:10, padding:"12px 16px", marginBottom:16, fontSize:13, color:"#854D0E", fontWeight:500}}>⏳ Connecting to database…</div>}
         {status==="error"      && <div style={{background:"#FEE2E2", border:"1px solid #FCA5A5", borderRadius:10, padding:"12px 16px", marginBottom:16, fontSize:13, color:"#991B1B", fontWeight:500}}>⚠️ Cannot connect to Firebase. Check your internet connection.</div>}
 
-        {/* Overview Tab */}
+        {/* Calendar Tab */}
+        {tab==="calendar" && (
+          <MonthCalendar songs={songs} sched={sched} onSelectWeek={w=>{setWeek(w); setTab("overview");}}/>
+        )}
+
+        {/* Sunday Schedule Tab */}
         {tab==="overview" && <Overview week={week} songs={songs} sched={sched}/>}
-
-        {/* Songs Tab */}
-        {tab==="songs" && <>
-          <div style={{display:"flex", gap:9, marginBottom:14, flexWrap:"wrap"}}>
-            <input style={{...IN, width:"auto", flex:"1 1 150px", maxWidth:250}} placeholder="Search song or artist…" value={search} onChange={e=>setSearch(e.target.value)}/>
-            <select style={{...IN, width:"auto"}} value={catFilter} onChange={e=>setCat(e.target.value)}>
-              <option value="All">All Categories</option>
-              {CATEGORIES.map(c=><option key={c}>{c}</option>)}
-            </select>
-            <button style={{...B, background:GOLD, color:WHITE, marginLeft:"auto"}} onClick={()=>{setEditing(null);setModal(true);}}>+ Add Song</button>
-          </div>
-          <div style={{display:"flex", gap:9, marginBottom:18, flexWrap:"wrap"}}>
-            {[{label:"Songs This Week",val:(songs[week]||[]).length},{label:"With YouTube",val:(songs[week]||[]).filter(s=>getYouTubeId(s.youtube)).length},{label:"Weeks Logged",val:allWeeks.length}].map(m=>(
-              <div key={m.label} style={{background:WHITE, borderRadius:10, border:`1px solid ${BORDER}`, padding:"9px 16px", minWidth:105}}>
-                <div style={{fontSize:22, fontWeight:800, color:NAVY}}>{m.val}</div>
-                <div style={{fontSize:10, color:MUTED, fontWeight:700, marginTop:1}}>{m.label}</div>
-              </div>
-            ))}
-          </div>
-          {weekSongs.length===0 ? (
-            <div style={{textAlign:"center", padding:"60px 0", color:MUTED}}>
-              <div style={{fontSize:44, opacity:0.2, marginBottom:12}}>♪</div>
-              <div style={{fontWeight:700, fontSize:16, marginBottom:5, color:NAVY}}>No songs for this Sunday yet</div>
-              <div style={{fontSize:13, marginBottom:22}}>Add the songs your team will lead this week.</div>
-              <button style={{...B, background:NAVY, color:WHITE}} onClick={()=>{setEditing(null);setModal(true);}}>Add First Song</button>
-            </div>
-          ):(
-            <div style={{display:"flex", flexDirection:"column", gap:9}}>
-              {weekSongs.map((song,i)=>(
-                <SongCard key={song.id} song={song} index={i}
-                  onEdit={()=>{setEditing(song);setModal(true);}}
-                  onDelete={async()=>{ const list=(songs[week]||[]).filter(s=>s.id!==song.id); await saveSongs(week,list); notify("Song removed","info"); }}/>
-              ))}
-            </div>
-          )}
-        </>}
-
-        {/* Schedule Tab */}
-        {tab==="schedule" && <TeamSchedule week={week} sched={sched} onSave={saveSched}/>}
       </div>
-
-      {modal && <SongModal initial={editing} onSave={handleSongSave} onClose={()=>{setModal(false);setEditing(null);}}/>}
 
       {toast && (
         <div style={{position:"fixed", bottom:22, right:22, background:toast.type==="error"?"#C0392B":NAVY, color:WHITE, borderRadius:10, padding:"11px 18px", fontSize:13, fontWeight:700, zIndex:9999, boxShadow:"0 4px 20px rgba(0,0,0,0.2)", maxWidth:300}}>
