@@ -638,20 +638,39 @@ function SongModal({initial, onSave, onClose}) {
 // ── Team Schedule ──────────────────────────────────────────────
 function TeamSchedule({week, sched, onSave}) {
   const [form,setForm]=useState(sched[week]||{}), [saving,setSaving]=useState(false), [saved,setSaved]=useState(true);
+  const [dbStatus,setDbStatus]=useState("");
   useEffect(()=>{setForm(sched[week]||{});setSaved(true);},[week]); // only reset on week change, not on every Firebase update
+  // Pre-fill from Firebase when sched loads for the first time for this week
+  useEffect(()=>{
+    if(sched[week] && Object.keys(sched[week]).length > 0){
+      setForm(f => Object.keys(f).some(k=>f[k]) ? f : sched[week]);
+    }
+  },[sched[week]]);
   const set=(k,v)=>{setForm(f=>({...f,[k]:v}));setSaved(false);};
   const filled=ROLES.filter(r=>form[r.key]?.trim());
-  async function save(){setSaving(true);await onSave(week,form);setSaving(false);setSaved(true);}
+  async function save(){
+    setSaving(true);
+    setDbStatus("Saving…");
+    try {
+      await onSave(week,form);
+      setDbStatus("✓ Saved successfully!");
+      setSaved(true);
+    } catch(e) {
+      setDbStatus("✗ " + (e.message||"Unknown error"));
+    }
+    setSaving(false);
+  }
   return (
     <div>
       {filled.length>0&&<div style={{ background:WHITE, border:`1px solid ${BORDER}`, borderRadius:12, padding:"14px 16px", marginBottom:20 }}><div style={{ fontSize:10, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.6px", marginBottom:10 }}>This Week's Team</div><div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>{filled.map(r=><div key={r.key} style={{ background:LIGHT, border:`1px solid ${BORDER}`, borderRadius:20, padding:"6px 14px", display:"flex", alignItems:"center", gap:8 }}><span style={{ fontSize:18 }}>{r.icon}</span><div><div style={{ fontSize:9, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.4px" }}>{r.label}</div><div style={{ fontSize:13, fontWeight:700, color:NAVY }}>{form[r.key]}</div></div></div>)}</div></div>}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(230px,1fr))", gap:12, marginBottom:18 }}>
         {ROLES.map(r=><div key={r.key} style={{ background:WHITE, borderRadius:12, border:`1px solid ${BORDER}`, padding:"14px 15px" }}><div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:9 }}><div style={{ width:34, height:34, borderRadius:8, background:NAVY+"15", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>{r.icon}</div><label style={{ ...LB, margin:0, fontSize:12 }}>{r.label}</label></div><input style={{ ...IN, fontSize:13 }} value={form[r.key]||""} onChange={e=>set(r.key,e.target.value)} placeholder="Enter name…"/></div>)}
       </div>
-      <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
         <button style={{ ...B, background:NAVY, color:WHITE, opacity:saving?0.6:1 }} onClick={save} disabled={saving}>{saving?"Saving…":"Save Schedule"}</button>
-        {saved&&filled.length>0&&<span style={{ fontSize:13, color:"#1A7F55", fontWeight:600 }}>✓ Saved</span>}
-        {!saved&&<span style={{ fontSize:13, color:GOLD, fontWeight:600 }}>● Unsaved changes</span>}
+        {saved&&filled.length>0&&!dbStatus&&<span style={{ fontSize:13, color:"#1A7F55", fontWeight:600 }}>✓ Saved</span>}
+        {!saved&&!dbStatus&&<span style={{ fontSize:13, color:GOLD, fontWeight:600 }}>● Unsaved changes</span>}
+        {dbStatus&&<span style={{ fontSize:13, fontWeight:600, color:dbStatus.startsWith("✓")?"#1A7F55":dbStatus==="Saving…"?GOLD:"#C0392B" }}>{dbStatus}</span>}
       </div>
       {filled.length===0&&<div style={{ textAlign:"center", padding:"50px 0", color:MUTED }}><div style={{ fontSize:40, opacity:0.2, marginBottom:10 }}>👥</div><div style={{ fontWeight:700, fontSize:15, color:NAVY, marginBottom:4 }}>No team assigned yet</div><div style={{ fontSize:13 }}>Fill in the names above and tap Save Schedule.</div></div>}
     </div>
@@ -676,9 +695,23 @@ function App({ onSignOut, signingOut }) {
     return()=>{sRef.off();scRef.off();};
   },[]);
 
-  async function saveSongs(w,list){if(!db)return;const obj={};list.forEach(s=>{obj[s.id]=s;});await db.ref(`songs/${weekKey(w)}`).set(list.length?obj:null);}
-  async function saveSched(w,data){
+  async function saveSongs(w,list){
     if(!db)return;
+    const obj={};
+    list.forEach(s=>{obj[s.id]=s;});
+    try {
+      await db.ref(`songs/${weekKey(w)}`).set(list.length?obj:null);
+    } catch(e) {
+      console.error("saveSongs error:", e);
+      const msg = e.code ? `Save failed: ${e.code}` : "Song save failed.";
+      notify(msg, "error");
+    }
+  }
+  async function saveSched(w,data){
+    if(!db){ notify("Database not connected.", "error"); return; }
+    // Check auth state
+    const user = auth ? auth.currentUser : null;
+    if(!user){ notify("Not signed in — please reload and log in again.", "error"); return; }
     // Clean: only save roles that have a non-empty name
     const clean={};
     Object.keys(data).forEach(k=>{ if(data[k]&&data[k].trim()) clean[k]=data[k].trim(); });
@@ -687,7 +720,9 @@ function App({ onSignOut, signingOut }) {
       notify("Team schedule saved! ✓");
     } catch(e) {
       console.error("saveSched error:", e);
-      notify("Error saving schedule. Please try again.", "error");
+      // Show the actual Firebase error code so we can diagnose
+      const msg = e.code ? `Save failed: ${e.code}` : "Save failed. Check console for details.";
+      notify(msg, "error");
     }
   }
 
