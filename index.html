@@ -481,7 +481,7 @@ function Overview({week, songs, sched}) {
                     {isOpen&&<div style={{ borderTop:`1px solid ${BORDER}`, padding:"10px 12px", background:"#F8FAFF" }}>
                       {vid&&<div style={{ marginBottom:10, display:"flex", gap:10, alignItems:"flex-start" }}><a href={song.youtube} target="_blank" rel="noreferrer"><img src={`https://img.youtube.com/vi/${vid}/mqdefault.jpg`} alt="thumb" style={{ width:100, height:56, borderRadius:6, objectFit:"cover", display:"block" }}/></a><a href={song.youtube} target="_blank" rel="noreferrer" style={{ fontSize:12, color:RED, textDecoration:"none", display:"flex", alignItems:"center", gap:4, marginTop:4 }}><YTIcon size={12}/> Open on YouTube</a></div>}
                       {song.notes&&<p style={{ fontSize:12, color:"#334", lineHeight:1.7, marginBottom:8 }}><b>Notes:</b> {song.notes}</p>}
-                      {song.lyrics&&<pre style={{ fontSize:11, color:"#223", lineHeight:1.8, background:WHITE, border:`1px solid ${BORDER}`, borderRadius:7, padding:"9px 11px", fontFamily:"'Courier New',monospace", margin:0 }}>{song.lyrics}</pre>}
+                      {song.lyrics&&<div><div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:5 }}><div style={{ fontSize:10, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.5px" }}>Lyrics / Chord Chart</div><CopyBtn text={song.lyrics}/></div><pre style={{ fontSize:11, color:"#223", lineHeight:1.8, background:WHITE, border:`1px solid ${BORDER}`, borderRadius:7, padding:"9px 11px", fontFamily:"'Courier New',monospace", margin:0 }}>{song.lyrics}</pre></div>}
                     </div>}
                   </div>
                 );
@@ -491,6 +491,34 @@ function Overview({week, songs, sched}) {
         </div>
       </div>
     </div>
+  );
+}
+
+// ── Copy Button ────────────────────────────────────────────────
+function CopyBtn({ text, label="Copy Lyrics" }) {
+  const [copied, setCopied] = useState(false);
+  function handleCopy() {
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {
+      // Fallback for older browsers
+      const ta = document.createElement("textarea");
+      ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+  return (
+    <button
+      onClick={handleCopy}
+      style={{ background: copied ? "#1A7F55" : "transparent", border: `1.5px solid ${copied ? "#1A7F55" : BORDER}`, color: copied ? "#FFFFFF" : MUTED, borderRadius: 7, padding: "3px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, transition: "all 0.2s", flexShrink: 0 }}>
+      {copied ? "✓ Copied!" : "📋 Copy"}
+    </button>
   );
 }
 
@@ -522,7 +550,7 @@ function SongCard({song, index, onEdit, onDelete}) {
       {open&&<div style={{ borderTop:`1px solid ${BORDER}`, padding:"13px 15px", background:"#F8FAFF" }}>
         {vid&&<div style={{ marginBottom:12, background:WHITE, border:`1px solid ${BORDER}`, borderRadius:10, padding:"10px 12px" }}><div style={{ fontSize:10, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:7 }}>YouTube Reference</div><div style={{ display:"flex", alignItems:"flex-start", gap:11 }}><a href={song.youtube} target="_blank" rel="noreferrer"><img src={`https://img.youtube.com/vi/${vid}/mqdefault.jpg`} alt="thumbnail" style={{ width:110, height:62, borderRadius:6, objectFit:"cover", display:"block" }}/></a><div><div style={{ fontSize:13, fontWeight:600, color:NAVY, marginBottom:5 }}>{song.title}</div><a href={song.youtube} target="_blank" rel="noreferrer" style={{ fontSize:12, color:RED, textDecoration:"none", display:"flex", alignItems:"center", gap:4 }}><YTIcon size={12}/> Open on YouTube</a></div></div></div>}
         {song.notes&&<div style={{ marginBottom:10 }}><div style={{ fontSize:10, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:4 }}>Team Notes</div><p style={{ fontSize:13, color:"#334", lineHeight:1.7, margin:0 }}>{song.notes}</p></div>}
-        {song.lyrics&&<div style={{ marginBottom:12 }}><div style={{ fontSize:10, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:5 }}>Lyrics / Chord Chart</div><pre style={{ fontSize:12, color:"#223", lineHeight:1.8, background:WHITE, border:`1px solid ${BORDER}`, borderRadius:8, padding:"11px 13px", fontFamily:"'Courier New',monospace", margin:0 }}>{song.lyrics}</pre></div>}
+        {song.lyrics&&<div style={{ marginBottom:12 }}><div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:5 }}><div style={{ fontSize:10, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.5px" }}>Lyrics / Chord Chart</div><CopyBtn text={song.lyrics}/></div><pre style={{ fontSize:12, color:"#223", lineHeight:1.8, background:WHITE, border:`1px solid ${BORDER}`, borderRadius:8, padding:"11px 13px", fontFamily:"'Courier New',monospace", margin:0 }}>{song.lyrics}</pre></div>}
         <div style={{ display:"flex", gap:7 }}>
           <button style={{ ...G, fontSize:12, padding:"5px 13px" }} onClick={onEdit}>Edit</button>
           <button style={{ ...G, fontSize:12, padding:"5px 13px", color:"#C0392B", borderColor:"#F5C6C6" }} onClick={onDelete}>Remove</button>
