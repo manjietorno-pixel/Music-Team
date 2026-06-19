@@ -3,950 +3,823 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Pastor's Prep Tool — UCC Ministry</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<title>UCC Pasay Music Team Hub</title>
 <style>
-:root {
-  --navy:    #0B2B5C;
-  --navy2:   #0D2E6A;
-  --royal:   #1A4F9C;
-  --mid:     #2E6FC4;
-  --light:   #5B9BD5;
-  --pale:    #D6E4F7;
-  --palecard:#EBF3FC;
-  --gold:    #C9A84C;
-  --gold2:   #E6C56A;
-  --white:   #FFFFFF;
-  --offwhite:#F0F6FF;
-  --text:    #1A2A4A;
-  --sub:     #3A5A8A;
-  --divider: #A0BEDD;
-  --success: #1A7A4A;
-  --error:   #8B1A1A;
-  --radius:  10px;
-  --shadow:  0 4px 24px rgba(11,43,92,0.13);
-}
-* { box-sizing:border-box; margin:0; padding:0; }
-body { font-family:'Source Sans 3',sans-serif; background:var(--offwhite); color:var(--text); min-height:100vh; }
-
-/* ── LOCK SCREEN ── */
-#lock-screen {
-  position:fixed; inset:0; background:var(--navy);
-  display:flex; align-items:center; justify-content:center;
-  z-index:999; padding:24px;
-}
-.lock-box {
-  background:var(--navy2);
-  border:1px solid rgba(201,168,76,0.3);
-  border-radius:16px;
-  padding:32px 28px;
-  max-width:400px; width:100%;
-  text-align:center;
-}
-.lock-cross {
-  width:48px; height:48px; margin:0 auto 20px;
-  position:relative;
-}
-.lock-cross::before {
-  content:''; position:absolute; left:50%; top:0; transform:translateX(-50%);
-  width:6px; height:100%; background:var(--gold); border-radius:3px;
-}
-.lock-cross::after {
-  content:''; position:absolute; top:36%; left:0;
-  width:100%; height:6px; background:var(--gold); border-radius:3px;
-}
-.lock-box h2 {
-  font-family:'EB Garamond',serif;
-  font-size:26px; font-weight:700;
-  color:var(--white); margin-bottom:6px;
-}
-.lock-box p { font-size:13px; color:var(--light); margin-bottom:24px; line-height:1.6; }
-.lock-box input {
-  width:100%; padding:12px 16px;
-  background:rgba(255,255,255,0.08);
-  border:1.5px solid rgba(201,168,76,0.35);
-  border-radius:8px; font-size:16px;
-  color:var(--white); font-family:inherit;
-  text-align:center; letter-spacing:0.12em;
-  outline:none; margin-bottom:12px;
-  transition:border 0.2s;
-}
-.lock-box input:focus { border-color:var(--gold); background:rgba(255,255,255,0.12); }
-.lock-box input::placeholder { color:rgba(255,255,255,0.3); letter-spacing:0.02em; font-size:14px; }
-.lock-error { color:#f08080; font-size:13px; margin-bottom:12px; display:none; min-height:20px; }
-.lock-error.show { display:block; }
-.btn-unlock {
-  width:100%; padding:13px;
-  background:var(--gold); color:var(--navy);
-  border:none; border-radius:8px;
-  font-family:'Source Sans 3',sans-serif;
-  font-size:15px; font-weight:700;
-  cursor:pointer; transition:all 0.2s;
-}
-.btn-unlock:hover { background:var(--gold2); transform:translateY(-1px); }
-.btn-unlock:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
-.lock-footer { font-size:11px; color:rgba(255,255,255,0.25); margin-top:20px; }
-
-/* ── HEADER ── */
-.app-header {
-  background:var(--navy); position:sticky; top:0; z-index:100;
-  box-shadow:0 2px 16px rgba(0,0,0,0.25);
-}
-.header-top { display:flex; align-items:center; gap:14px; padding:12px 20px 8px; }
-.cross-icon { width:28px; height:28px; flex-shrink:0; position:relative; }
-.cross-icon::before { content:''; position:absolute; left:50%; top:0; transform:translateX(-50%); width:4px; height:100%; background:var(--gold); border-radius:2px; }
-.cross-icon::after  { content:''; position:absolute; top:35%; left:0; width:100%; height:4px; background:var(--gold); border-radius:2px; }
-.header-title { flex:1; }
-.header-title h1 { font-family:'EB Garamond',serif; font-size:clamp(16px,4vw,22px); font-weight:700; color:var(--white); line-height:1.2; }
-.header-title p  { font-size:11px; color:var(--light); letter-spacing:0.04em; margin-top:1px; }
-.gold-bar { height:3px; background:linear-gradient(90deg,var(--gold),var(--gold2),var(--gold)); }
-
-/* ── TABS ── */
-.tabs { display:flex; background:var(--navy2); border-top:1px solid rgba(255,255,255,0.07); }
-.tab-btn {
-  flex:1; padding:10px 6px;
-  font-family:'Source Sans 3',sans-serif; font-size:clamp(10px,2.8vw,13px); font-weight:600;
-  color:var(--divider); background:none; border:none; cursor:pointer;
-  display:flex; flex-direction:column; align-items:center; gap:3px;
-  transition:all 0.2s; border-bottom:3px solid transparent;
-}
-.tab-btn .tab-icon { font-size:18px; }
-.tab-btn.active { color:var(--gold); border-bottom-color:var(--gold); background:rgba(201,168,76,0.08); }
-.tab-btn:not(.active):hover { color:var(--pale); }
-
-/* ── PANELS ── */
-.panel { display:none; padding:18px 16px 80px; max-width:860px; margin:0 auto; }
-.panel.active { display:block; }
-
-/* ── CARDS ── */
-.card { background:var(--white); border-radius:var(--radius); box-shadow:var(--shadow); padding:18px; margin-bottom:16px; border-left:4px solid var(--royal); }
-.card-title { font-family:'EB Garamond',serif; font-size:17px; font-weight:700; color:var(--navy); margin-bottom:12px; display:flex; align-items:center; gap:8px; }
-.card-title .badge { background:var(--royal); color:#fff; font-size:10px; font-family:'Source Sans 3',sans-serif; font-weight:700; padding:2px 7px; border-radius:20px; letter-spacing:0.06em; }
-
-/* ── FORM ── */
-label { display:block; font-size:12px; font-weight:700; color:var(--sub); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:5px; }
-input[type=text], textarea, select {
-  width:100%; padding:10px 12px; border:1.5px solid var(--pale); border-radius:7px;
-  font-family:'Source Sans 3',sans-serif; font-size:14px; color:var(--text);
-  background:var(--offwhite); transition:border 0.2s, box-shadow 0.2s; outline:none; margin-bottom:12px;
-}
-input[type=text]:focus, textarea:focus, select:focus { border-color:var(--royal); box-shadow:0 0 0 3px rgba(26,79,156,0.12); background:#fff; }
-textarea { resize:vertical; min-height:80px; line-height:1.5; }
-select { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%231A4F9C' d='M6 8L0 0h12z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:32px; }
-.row-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-@media(max-width:480px){ .row-2 { grid-template-columns:1fr; } }
-
-/* ── BUTTONS ── */
-.btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; padding:11px 20px; border:none; border-radius:7px; font-family:'Source Sans 3',sans-serif; font-size:14px; font-weight:700; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
-.btn-primary { background:var(--royal); color:#fff; width:100%; }
-.btn-primary:hover:not(:disabled) { background:var(--navy); transform:translateY(-1px); box-shadow:0 4px 14px rgba(26,79,156,0.3); }
-.btn-primary:disabled { opacity:0.55; cursor:not-allowed; }
-.btn-gold { background:var(--gold); color:var(--navy); width:100%; }
-.btn-gold:hover:not(:disabled) { background:var(--gold2); transform:translateY(-1px); box-shadow:0 4px 14px rgba(201,168,76,0.35); }
-.btn-gold:disabled { opacity:0.55; cursor:not-allowed; }
-.btn-outline { background:transparent; border:2px solid var(--royal); color:var(--royal); width:100%; }
-.btn-outline:hover { background:var(--pale); }
-.btn-sm { padding:7px 14px; font-size:12px; width:auto; }
-.btn-danger { background:#c0392b; color:#fff; }
-.btn-danger:hover { background:#a93226; }
-
-/* ── STATUS ── */
-.status-box { padding:12px 14px; border-radius:7px; font-size:13px; margin-bottom:14px; display:none; align-items:flex-start; gap:8px; line-height:1.5; }
-.status-box.show { display:flex; }
-.status-box.loading { background:var(--palecard); border:1px solid var(--pale); color:var(--sub); }
-.status-box.success { background:#e8f5ee; border:1px solid #a3d4b5; color:var(--success); }
-.status-box.error   { background:#fdecea; border:1px solid #f5b9b5; color:var(--error); }
-.spinner { width:16px; height:16px; flex-shrink:0; border:2.5px solid var(--pale); border-top-color:var(--royal); border-radius:50%; animation:spin 0.8s linear infinite; }
-@keyframes spin { to { transform:rotate(360deg); } }
-
-/* ── PILLS / TYPE CARDS ── */
-.lang-pills { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:12px; }
-.lang-pill { padding:5px 12px; border-radius:20px; font-size:12px; font-weight:700; cursor:pointer; border:2px solid var(--pale); background:var(--white); color:var(--sub); transition:all 0.15s; }
-.lang-pill.active { background:var(--royal); border-color:var(--royal); color:#fff; }
-.type-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
-.type-card { padding:10px 12px; border-radius:8px; border:2px solid var(--pale); background:var(--white); cursor:pointer; transition:all 0.15s; text-align:left; }
-.type-card.active { border-color:var(--royal); background:var(--palecard); }
-.type-card .type-name { font-size:13px; font-weight:700; color:var(--navy); }
-.type-card .type-desc { font-size:11px; color:var(--sub); margin-top:2px; }
-
-/* ── OUTLINE EDITOR ── */
-.outline-editor { width:100%; min-height:300px; font-family:'Source Sans 3',sans-serif; font-size:13.5px; line-height:1.7; padding:14px; border:1.5px solid var(--pale); border-radius:8px; background:var(--offwhite); color:var(--text); resize:vertical; outline:none; transition:border 0.2s; }
-.outline-editor:focus { border-color:var(--royal); box-shadow:0 0 0 3px rgba(26,79,156,0.1); background:#fff; }
-
-/* ── SCRIPTURE CARDS ── */
-.scripture-card { background:var(--white); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:14px; overflow:hidden; border:1px solid var(--pale); }
-.scripture-card-header { background:var(--royal); padding:10px 14px; display:flex; align-items:center; justify-content:space-between; }
-.scripture-ref { font-family:'EB Garamond',serif; font-size:16px; font-weight:700; color:#fff; }
-.scripture-tag { background:rgba(255,255,255,0.18); color:var(--gold2); font-size:10px; font-weight:700; padding:2px 8px; border-radius:20px; letter-spacing:0.06em; text-transform:uppercase; }
-.scripture-body { padding:14px; }
-.scripture-verse-en { font-family:'EB Garamond',serif; font-size:15px; color:var(--text); line-height:1.6; margin-bottom:10px; font-style:italic; }
-.scripture-divider { height:1px; background:var(--pale); margin:10px 0; }
-.scripture-verse-fil { font-size:13.5px; color:var(--sub); line-height:1.6; font-style:italic; }
-.scripture-label { font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--divider); margin-bottom:4px; }
-.scripture-connection { font-size:12.5px; color:var(--sub); margin-top:10px; padding:8px 10px; background:var(--palecard); border-radius:6px; border-left:3px solid var(--gold); }
-
-/* ── SLIDE PREVIEW ── */
-.slide-preview-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; margin-bottom:16px; }
-.slide-thumb { border-radius:8px; aspect-ratio:16/9; padding:12px; position:relative; overflow:hidden; border:2px solid transparent; transition:transform 0.2s, box-shadow 0.2s; }
-.slide-thumb:hover { transform:scale(1.03); box-shadow:0 8px 24px rgba(11,43,92,0.3); }
-.slide-thumb-num { position:absolute; top:6px; right:8px; font-size:9px; color:rgba(255,255,255,0.4); font-weight:700; }
-.slide-thumb-label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px; }
-.slide-thumb-title { font-family:'EB Garamond',serif; font-size:12px; color:#fff; line-height:1.3; font-weight:700; }
-.slide-thumb-body { font-size:9px; margin-top:5px; line-height:1.5; opacity:0.75; }
-.slide-gold-bar { position:absolute; bottom:0; left:0; right:0; height:3px; }
-
-/* ── STEPS ── */
-.steps { display:flex; align-items:center; margin-bottom:16px; }
-.step { flex:1; text-align:center; position:relative; }
-.step::after { content:''; position:absolute; top:14px; left:50%; width:100%; height:2px; background:var(--pale); z-index:0; }
-.step:last-child::after { display:none; }
-.step-dot { width:28px; height:28px; border-radius:50%; background:var(--pale); color:var(--divider); font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; margin:0 auto 4px; position:relative; z-index:1; transition:all 0.2s; }
-.step.done .step-dot { background:var(--royal); color:#fff; }
-.step.active .step-dot { background:var(--gold); color:var(--navy); }
-.step-label { font-size:10px; color:var(--divider); font-weight:600; }
-.step.done .step-label, .step.active .step-label { color:var(--sub); }
-
-/* ── THEME CHIPS ── */
-.theme-chip { display:inline-block; background:var(--palecard); border:1px solid var(--pale); border-radius:20px; padding:3px 10px; font-size:11px; font-weight:600; color:var(--royal); margin:2px; cursor:pointer; transition:all 0.15s; }
-.theme-chip:hover { background:var(--pale); }
-
-/* ── SETTINGS INFO BOX ── */
-.info-box { background:linear-gradient(135deg,#0a2040,#0d2e6a); border-radius:var(--radius); padding:18px; margin-bottom:16px; border:1px solid rgba(201,168,76,0.25); }
-.info-box h3 { font-family:'EB Garamond',serif; font-size:17px; color:var(--gold); margin-bottom:8px; display:flex; align-items:center; gap:7px; }
-.info-box p { font-size:12.5px; color:var(--light); line-height:1.7; margin-bottom:8px; }
-.info-box code { background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px; font-size:11px; color:var(--gold2); }
-
-/* ── EMPTY STATE ── */
-.empty-state { text-align:center; padding:40px 20px; color:var(--divider); }
-.empty-state .empty-icon { font-size:48px; margin-bottom:12px; }
-.empty-state p { font-size:14px; line-height:1.6; }
-
-/* ── FOOTER ── */
-.app-footer { position:fixed; bottom:0; left:0; right:0; background:var(--white); border-top:1px solid var(--pale); padding:7px 16px; font-size:10px; color:var(--divider); text-align:center; z-index:50; }
-.scroll-top-btn { position:fixed; bottom:44px; right:16px; background:var(--royal); color:#fff; border:none; border-radius:50%; width:40px; height:40px; font-size:18px; cursor:pointer; box-shadow:0 4px 14px rgba(11,43,92,0.3); display:none; align-items:center; justify-content:center; z-index:60; }
-.scroll-top-btn.show { display:flex; }
-
-/* ── CONNECTION STATUS DOT ── */
-.conn-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:5px; background:var(--divider); }
-.conn-dot.ok { background:#4caf82; }
-.conn-dot.err { background:#e05555; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #EEF3FF; color: #1a2744; min-height: 100vh; }
+  input, select, textarea, button { font-family: inherit; }
+  pre { white-space: pre-wrap; word-break: break-word; }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-thumb { background: #C0CADF; border-radius: 3px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .spin { animation: spin 0.8s linear infinite; display: inline-block; }
+  .fade-in { animation: fadeIn 0.3s ease; }
 </style>
 </head>
 <body>
+<div id="root"><div style="text-align:center;padding:80px 20px;color:#6B7A99;font-family:system-ui">Loading UCC Pasay Music Team Hub…</div></div>
 
-<!-- ══ LOCK SCREEN ══════════════════════════════════════════════════════════ -->
-<div id="lock-screen">
-  <div class="lock-box">
-    <div class="lock-cross"></div>
-    <h2>Pastor's Prep Tool</h2>
-    <p>UCC Ministry · Sermon Builder · Scripture Finder<br>Enter your ministry passphrase to continue.</p>
-    <input type="password" id="pass-input" placeholder="Enter passphrase..."
-      onkeydown="if(event.key==='Enter')unlock()" autocomplete="off"/>
-    <div class="lock-error" id="lock-error"></div>
-    <button class="btn-unlock" id="btn-unlock" onclick="unlock()">🔓 Enter</button>
-    <div class="lock-footer">Your passphrase is sent securely to the church server and never stored in plain text.</div>
-  </div>
-</div>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-<!-- ══ APP (hidden until unlocked) ════════════════════════════════════════ -->
-<div id="app" style="display:none">
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
 
-<header class="app-header">
-  <div class="header-top">
-    <div class="cross-icon"></div>
-    <div class="header-title">
-      <h1>Pastor's Prep Tool</h1>
-      <p id="conn-status"><span class="conn-dot" id="conn-dot"></span>Connecting...</p>
-    </div>
-  </div>
-  <div class="gold-bar"></div>
-  <nav class="tabs">
-    <button class="tab-btn active" onclick="showTab('sermon')"    id="tab-sermon">   <span class="tab-icon">✍️</span>Sermon</button>
-    <button class="tab-btn"        onclick="showTab('scripture')" id="tab-scripture"><span class="tab-icon">📖</span>Scripture</button>
-    <button class="tab-btn"        onclick="showTab('export')"    id="tab-export">   <span class="tab-icon">📊</span>Slides</button>
-    <button class="tab-btn"        onclick="showTab('settings')"  id="tab-settings"> <span class="tab-icon">⚙️</span>Settings</button>
-  </nav>
-</header>
-
-<!-- ══ TAB 1 — SERMON BUILDER ══════════════════════════════════════════════ -->
-<div class="panel active" id="panel-sermon">
-  <div class="steps">
-    <div class="step active" id="step1"><div class="step-dot">1</div><div class="step-label">Build</div></div>
-    <div class="step" id="step2"><div class="step-dot">2</div><div class="step-label">Scripture</div></div>
-    <div class="step" id="step3"><div class="step-dot">3</div><div class="step-label">Slides</div></div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">✍️ Sermon Details <span class="badge">STEP 1</span></div>
-
-    <label>Sermon Title / Topic</label>
-    <input type="text" id="sermon-title" placeholder="e.g. Walking in Faith During Hard Times"/>
-
-    <label>Key Verse (optional)</label>
-    <input type="text" id="sermon-verse" placeholder="e.g. Hebrews 11:1 or Romans 8:28"/>
-
-    <label>Language</label>
-    <div class="lang-pills">
-      <div class="lang-pill active" data-lang="English"              onclick="selectLang(this)">English</div>
-      <div class="lang-pill"        data-lang="Filipino (Tagalog)"   onclick="selectLang(this)">Filipino</div>
-      <div class="lang-pill"        data-lang="Ilonggo (Hiligaynon)" onclick="selectLang(this)">Ilonggo</div>
-      <div class="lang-pill"        data-lang="Cebuano"              onclick="selectLang(this)">Cebuano</div>
-    </div>
-
-    <label>Sermon Type</label>
-    <div class="type-grid">
-      <div class="type-card active" data-type="expository"   onclick="selectType(this)"><div class="type-name">📖 Expository</div><div class="type-desc">Verse-by-verse</div></div>
-      <div class="type-card"        data-type="topical"      onclick="selectType(this)"><div class="type-name">🎯 Topical</div><div class="type-desc">Theme-centered</div></div>
-      <div class="type-card"        data-type="evangelistic" onclick="selectType(this)"><div class="type-name">✝️ Evangelistic</div><div class="type-desc">Gospel focus</div></div>
-      <div class="type-card"        data-type="devotional"   onclick="selectType(this)"><div class="type-name">🙏 Devotional</div><div class="type-desc">Personal application</div></div>
-    </div>
-
-    <label>Audience</label>
-    <select id="sermon-audience">
-      <option value="general congregation">General Congregation</option>
-      <option value="single adults">Single Adults Ministry</option>
-      <option value="youth">Youth / Young Adults</option>
-      <option value="men">Men's Ministry</option>
-      <option value="women">Women's Ministry</option>
-      <option value="prayer meeting">Prayer Meeting</option>
-      <option value="Bible study group">Bible Study Group</option>
-    </select>
-
-    <label>Additional Notes (optional)</label>
-    <textarea id="sermon-notes" placeholder="Any specific direction, themes, or context..."></textarea>
-
-    <div id="status-sermon" class="status-box loading">
-      <div class="spinner"></div><span id="status-sermon-msg">Generating...</span>
-    </div>
-    <button class="btn btn-primary" onclick="generateOutline()" id="btn-generate">
-      ✨ Generate Sermon Outline
-    </button>
-  </div>
-
-  <div id="outline-result" style="display:none">
-    <div class="card" style="border-left-color:var(--gold)">
-      <div class="card-title">📋 Generated Outline <span class="badge" style="background:var(--gold);color:var(--navy)">EDITABLE</span></div>
-      <p style="font-size:12px;color:var(--sub);margin-bottom:10px;">Review and edit freely below — this becomes your slide content.</p>
-      <textarea class="outline-editor" id="outline-editor"></textarea>
-      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-        <button class="btn btn-outline btn-sm" onclick="generateOutline()">🔄 Regenerate</button>
-        <button class="btn btn-primary btn-sm" onclick="goToExport()">📊 Build Slides →</button>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title">💡 Quick Scripture Ideas</div>
-      <p style="font-size:12px;color:var(--sub);margin-bottom:10px;">Tap a theme to search for related scriptures.</p>
-      <div id="quick-themes"></div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ TAB 2 — SCRIPTURE FINDER ════════════════════════════════════════════ -->
-<div class="panel" id="panel-scripture">
-  <div class="card">
-    <div class="card-title">📖 Find Related Scriptures <span class="badge">AI-POWERED</span></div>
-
-    <label>Topic or Theme</label>
-    <input type="text" id="scripture-topic" placeholder="e.g. faith, forgiveness, prayer, hope in trials..."/>
-
-    <label>English Translation</label>
-    <div class="lang-pills">
-      <div class="lang-pill active" data-trans="NKJV" onclick="selectTrans(this)">NKJV</div>
-      <div class="lang-pill"        data-trans="KJV"  onclick="selectTrans(this)">KJV</div>
-      <div class="lang-pill"        data-trans="NIV"  onclick="selectTrans(this)">NIV</div>
-      <div class="lang-pill"        data-trans="NLT"  onclick="selectTrans(this)">NLT</div>
-    </div>
-
-    <label>Filipino Translation</label>
-    <div class="lang-pills">
-      <div class="lang-pill active" data-fil="ASND" onclick="selectFil(this)">ASND (Tagalog)</div>
-      <div class="lang-pill"        data-fil="MBB"  onclick="selectFil(this)">MBB (Tagalog)</div>
-      <div class="lang-pill"        data-fil="ADB"  onclick="selectFil(this)">ADB (Tagalog)</div>
-      <div class="lang-pill"        data-fil="none" onclick="selectFil(this)">English only</div>
-    </div>
-
-    <label>How many scriptures?</label>
-    <select id="scripture-count">
-      <option value="3">3 scriptures</option>
-      <option value="5" selected>5 scriptures</option>
-      <option value="7">7 scriptures</option>
-    </select>
-
-    <div id="status-scripture" class="status-box loading">
-      <div class="spinner"></div><span>Finding scriptures...</span>
-    </div>
-    <button class="btn btn-primary" onclick="findScriptures()" id="btn-scripture">
-      📖 Find Scriptures
-    </button>
-  </div>
-  <div id="scripture-results"></div>
-</div>
-
-<!-- ══ TAB 3 — BUILD SLIDES ══════════════════════════════════════════════════ -->
-<div class="panel" id="panel-export">
-  <div class="card">
-    <div class="card-title">📊 Slide Settings <span class="badge">STEP 3</span></div>
-    <div class="row-2">
-      <div>
-        <label>Preacher Name</label>
-        <input type="text" id="slide-preacher" placeholder="Pastor Juan dela Cruz"/>
-      </div>
-      <div>
-        <label>Church · Date</label>
-        <input type="text" id="slide-church" placeholder="UCC Pasay · June 2026"/>
-      </div>
-    </div>
-
-    <label>Color Theme</label>
-    <div class="type-grid">
-      <div class="type-card active" data-theme="navy"  onclick="selectSlideTheme(this)"><div class="type-name">🔵 Deep Navy</div><div class="type-desc">Navy + Gold</div></div>
-      <div class="type-card"        data-theme="royal" onclick="selectSlideTheme(this)"><div class="type-name">💙 Royal Blue</div><div class="type-desc">Bright blue + white</div></div>
-      <div class="type-card"        data-theme="dark"  onclick="selectSlideTheme(this)"><div class="type-name">🌑 Midnight</div><div class="type-desc">Dark + blue accent</div></div>
-      <div class="type-card"        data-theme="light" onclick="selectSlideTheme(this)"><div class="type-name">☀️ Light</div><div class="type-desc">White + navy</div></div>
-    </div>
-
-    <label>Scripture Slides</label>
-    <div class="lang-pills">
-      <div class="lang-pill active" data-inc="yes"     onclick="selectInclude(this)">Bilingual (EN + FIL)</div>
-      <div class="lang-pill"        data-inc="english" onclick="selectInclude(this)">English only</div>
-      <div class="lang-pill"        data-inc="no"      onclick="selectInclude(this)">None</div>
-    </div>
-  </div>
-
-  <div class="card" style="border-left-color:var(--gold)">
-    <div class="card-title">👁 Slide Preview</div>
-    <div id="slide-preview-area">
-      <div class="empty-state">
-        <div class="empty-icon">📊</div>
-        <p>Generate a sermon outline first,<br>then come here to preview and download.</p>
-      </div>
-    </div>
-    <div id="export-actions" style="display:none;margin-top:14px">
-      <button class="btn btn-gold" onclick="buildAndDownloadPPTX()" id="btn-pptx">
-        ⬇️ Download PPTX
-      </button>
-      <div id="status-export" class="status-box" style="margin-top:10px">
-        <div class="spinner"></div><span id="status-export-msg">Building slides...</span>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ TAB 4 — SETTINGS ════════════════════════════════════════════════════ -->
-<div class="panel" id="panel-settings">
-
-  <div class="info-box">
-    <h3>🔐 Connection</h3>
-    <p>This tool connects securely to the UCC church server. Your passphrase authenticates each request. The AI key is kept safe on the server — never visible to you or anyone else.</p>
-    <p><span class="conn-dot ok"></span> Connected as a verified UCC ministry user.</p>
-    <button class="btn btn-danger btn-sm" style="margin-top:10px" onclick="logout()">🔒 Lock & Sign Out</button>
-  </div>
-
-  <div class="card">
-    <div class="card-title">⛪ Church Defaults</div>
-    <label>Default Church Name</label>
-    <input type="text" id="default-church" placeholder="Universal Church of Christ Inc." oninput="saveDefaults()"/>
-    <label>Default Preacher Name</label>
-    <input type="text" id="default-preacher" placeholder="Pastor..." oninput="saveDefaults()"/>
-    <label>Default Language</label>
-    <select id="default-lang" onchange="saveDefaults()">
-      <option value="English">English</option>
-      <option value="Filipino (Tagalog)">Filipino (Tagalog)</option>
-      <option value="Ilonggo (Hiligaynon)">Ilonggo (Hiligaynon)</option>
-      <option value="Cebuano">Cebuano</option>
-    </select>
-  </div>
-
-  <div class="card">
-    <div class="card-title">ℹ️ About</div>
-    <p style="font-size:13px;line-height:1.8;color:var(--sub)">
-      <strong>Pastor's Prep Tool</strong> — UCC Ministry<br><br>
-      ✅ Works on phone and laptop<br>
-      ✅ No app to install — open in any browser<br>
-      ✅ Your API key stays on the church server<br>
-      ✅ Generates downloadable PPTX slides<br>
-      ✅ Bilingual scripture support (NKJV + ASND/MBB)<br>
-      ✅ Supports English, Filipino, Ilonggo, Cebuano<br><br>
-      <em>For access or issues, contact your ministry coordinator.</em>
-    </p>
-  </div>
-</div>
-
-</div><!-- /app -->
-
-<button class="scroll-top-btn" id="scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
-<div class="app-footer">Pastor's Prep Tool · UCC Ministry · Secured by church server · No data stored</div>
-
-<script>
-// ─────────────────────────────────────────────────────────────────────────────
-// CONFIGURATION — Update BACKEND_URL after deploying to Vercel
-// ─────────────────────────────────────────────────────────────────────────────
-const BACKEND_URL = 'https://YOUR-PROJECT-NAME.vercel.app/api/chat';
-// Example: 'https://ucc-pastors-prep.vercel.app/api/chat'
-
-// ── STATE ─────────────────────────────────────────────────────────────────────
-const state = {
-  pass: '',
-  lang: 'English',
-  sermonType: 'expository',
-  slideTheme: 'navy',
-  includeScripture: 'yes',
-  translation: 'NKJV',
-  filTranslation: 'ASND',
-  outline: '',
-  sermonTitle: '',
-  scriptures: [],
+// ── Firebase ───────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyDEfvJ9mRoKIJEknmZfEo0w1ESp9sTLPQ4",
+  authDomain: "ucc-pasay-music-team-hub.firebaseapp.com",
+  databaseURL: "https://ucc-pasay-music-team-hub-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "ucc-pasay-music-team-hub",
+  storageBucket: "ucc-pasay-music-team-hub.firebasestorage.app",
+  messagingSenderId: "708266011081",
+  appId: "1:708266011081:web:201e7d40c191624b9e6018"
 };
+let db = null; let auth = null;
+try { const app = firebase.initializeApp(firebaseConfig); db = firebase.database(app); auth = firebase.auth(app); }
+catch(e) { console.error("Firebase init failed:", e); }
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
-window.addEventListener('load', () => {
-  // restore passphrase from session (cleared on tab close)
-  const savedPass = sessionStorage.getItem('ucc_pass');
-  if (savedPass) { state.pass = savedPass; showApp(); }
+const TEAM_PASSPHRASE = "UCCPasay2026";
 
-  // restore defaults
-  const def = JSON.parse(localStorage.getItem('ppt_defaults') || '{}');
-  if (def.church)   { document.getElementById('default-church').value   = def.church;   document.getElementById('slide-church').value   = def.church; }
-  if (def.preacher) { document.getElementById('default-preacher').value = def.preacher; document.getElementById('slide-preacher').value = def.preacher; }
-  if (def.lang)     { document.getElementById('default-lang').value     = def.lang; }
+// ── Constants ──────────────────────────────────────────────────
+const CATEGORIES = ["Opening Worship","Praise & Worship","Offering","Communion","Altar Call","Closing Worship","Special Number","Other"];
+const KEYS = ["C","C#/Db","D","D#/Eb","E","F","F#/Gb","G","G#/Ab","A","A#/Bb","B"];
+const ROLES = [
+  { key:"songLeader", label:"Song Leader", icon:"🎤" },
+  { key:"backup",     label:"Back Up",     icon:"🎵" },
+  { key:"drummer",    label:"Drummer",     icon:"🥁" },
+  { key:"guitar",     label:"Guitar",      icon:"🎸" },
+  { key:"bass",       label:"Bass",        icon:"🎸" },
+  { key:"organ",      label:"Organ / Keys",icon:"🎹" },
+];
 
-  window.addEventListener('scroll', () => {
-    document.getElementById('scroll-top').classList.toggle('show', window.scrollY > 300);
-  });
+const NAVY="#1B3A6B", GOLD="#C9A84C", WHITE="#FFFFFF", MUTED="#6B7A99", BORDER="#D0DAF5", RED="#CC0000", LIGHT="#EEF3FF", GREEN="#1A7F55", PURPLE="#6B3FA0";
+const CAT_COLORS = {
+  "Opening Worship":"#1B3A6B","Praise & Worship":"#2563EB","Offering":"#C9A84C",
+  "Communion":"#6B3FA0","Altar Call":"#C0392B","Closing Worship":"#1B3A6B",
+  "Special Number":"#1A7F55","Other":"#6B7A99",
+};
+const B  = { border:"none", borderRadius:8, padding:"9px 20px", fontWeight:700, fontSize:14, cursor:"pointer" };
+const G  = { background:"transparent", color:NAVY, border:`1.5px solid ${BORDER}`, borderRadius:8, padding:"7px 14px", fontWeight:500, fontSize:13, cursor:"pointer" };
+const IN = { width:"100%", border:`1.5px solid ${BORDER}`, borderRadius:8, padding:"9px 12px", fontSize:14, background:WHITE, color:"#1a2744", outline:"none", fontFamily:"inherit", boxSizing:"border-box" };
+const LB = { fontSize:11, fontWeight:700, color:MUTED, display:"block", marginBottom:5, textTransform:"uppercase", letterSpacing:"0.6px" };
 
-  document.getElementById('pass-input').focus();
-});
-
-// ── LOCK / UNLOCK ─────────────────────────────────────────────────────────────
-async function unlock() {
-  const pass = document.getElementById('pass-input').value.trim();
-  if (!pass) return;
-
-  const btn = document.getElementById('btn-unlock');
-  const errEl = document.getElementById('lock-error');
-  btn.disabled = true;
-  btn.textContent = 'Verifying...';
-  errEl.classList.remove('show');
-
-  try {
-    // verify by making a lightweight test call
-    const res = await fetch(BACKEND_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-church-pass': pass },
-      body: JSON.stringify({
-        messages: [{ role: 'user', content: 'ping' }],
-        system: 'Reply with exactly one word: ready',
-        max_tokens: 10
-      })
-    });
-
-    if (res.status === 401) {
-      errEl.textContent = '❌ Incorrect passphrase. Please check with your ministry coordinator.';
-      errEl.classList.add('show');
-      btn.disabled = false; btn.textContent = '🔓 Enter';
-      return;
-    }
-    if (!res.ok) {
-      const d = await res.json().catch(()=>({}));
-      errEl.textContent = '⚠️ Server error: ' + (d.error || res.status) + '. Try again or contact coordinator.';
-      errEl.classList.add('show');
-      btn.disabled = false; btn.textContent = '🔓 Enter';
-      return;
-    }
-
-    // success
-    state.pass = pass;
-    sessionStorage.setItem('ucc_pass', pass);
-    showApp();
-  } catch (e) {
-    errEl.textContent = '⚠️ Cannot reach server. Check internet connection.';
-    errEl.classList.add('show');
-    btn.disabled = false; btn.textContent = '🔓 Enter';
+// ── Helpers ────────────────────────────────────────────────────
+function getYouTubeId(url) {
+  if (!url) return null;
+  for (const p of [/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/, /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/]) {
+    const m = url.match(p); if (m) return m[1];
   }
+  return null;
+}
+function getSunday(date) {
+  const d = new Date(date); d.setDate(d.getDate() - d.getDay());
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,"0"), day = String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function addWeeks(dateStr, n) {
+  const [y,m,d] = dateStr.split("-").map(Number), date = new Date(y, m-1, d);
+  date.setDate(date.getDate() + n*7);
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+}
+function weekLabel(w) { const [y,m,d]=w.split("-").map(Number); return new Date(y,m-1,d).toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"}); }
+function weekShort(w) { const [y,m,d]=w.split("-").map(Number); return new Date(y,m-1,d).toLocaleDateString("en-US",{month:"short",day:"numeric"}); }
+function weekKey(w) { return "w"+w.replace(/-/g,""); }
+function keyToDate(k) { const s=k.replace(/^w/,""); return `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}`; }
+function getSundaysInMonth(year, month) {
+  const sundays=[], d=new Date(year,month,1);
+  d.setDate(d.getDate()+((7-d.getDay())%7));
+  while(d.getMonth()===month){
+    sundays.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`);
+    d.setDate(d.getDate()+7);
+  }
+  return sundays;
+}
+function monthLabel(year, month) { return new Date(year,month,1).toLocaleDateString("en-US",{month:"long",year:"numeric"}); }
+
+function YTIcon({size=14}) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{display:"block",flexShrink:0}}><rect x="2" y="5" width="20" height="14" rx="3" fill={RED}/><polygon points="10,8.5 16,12 10,15.5" fill="white"/></svg>;
 }
 
-function showApp() {
-  document.getElementById('lock-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  updateConnStatus(true);
-}
+// ── AI Lyrics Generator ────────────────────────────────────────
+async function generateAILyrics(title, artist, category, songKey) {
+  const keyInfo = songKey ? `Musical Key: ${songKey}` : "Key: Not specified";
+  const prompt = `You are a worship music assistant for a Filipino church team (UCC Pasay).
 
-function logout() {
-  sessionStorage.removeItem('ucc_pass');
-  state.pass = '';
-  document.getElementById('lock-screen').style.display = 'flex';
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('pass-input').value = '';
-  document.getElementById('btn-unlock').disabled = false;
-  document.getElementById('btn-unlock').textContent = '🔓 Enter';
-}
+Generate a structured lyrics and chord chart reference for the worship team based on:
+Song Title: ${title}
+Artist / Composer: ${artist || "Unknown"}
+Category: ${category}
+${keyInfo}
 
-function updateConnStatus(ok) {
-  const dot = document.getElementById('conn-dot');
-  const txt = document.getElementById('conn-status');
-  dot.className = 'conn-dot ' + (ok ? 'ok' : 'err');
-  txt.innerHTML = `<span class="conn-dot ${ok ? 'ok' : 'err'}"></span>${ok ? 'Connected · UCC Ministry Server' : 'Connection issue'}`;
-}
+Instructions:
+- Add proper section labels: [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Bridge], [Outro] — only include sections that fit the song
+- ${songKey ? `Since the key is ${songKey}, add chord markers above each lyric line like this:\n  G        D        Em       C\n  Line of lyrics here` : "Do not add chords since no key was provided"}
+- Write worship-appropriate lyrics that match the song title, category, and artist's typical style
+- Keep it realistic and singable for a church congregation
+- For Filipino worship songs, you may include a mix of English and Filipino if appropriate
 
-// ── TABS ──────────────────────────────────────────────────────────────────────
-function showTab(name) {
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('panel-' + name).classList.add('active');
-  document.getElementById('tab-' + name).classList.add('active');
-  window.scrollTo({ top:0, behavior:'smooth' });
-}
+Return ONLY the formatted lyrics/chord chart. No explanations, no markdown, no preamble.`;
 
-// ── PILL / CARD SELECTORS ─────────────────────────────────────────────────────
-function selectLang(el)        { pill(el); state.lang            = el.dataset.lang; }
-function selectType(el)        { card(el); state.sermonType      = el.dataset.type; }
-function selectTrans(el)       { pill(el); state.translation     = el.dataset.trans; }
-function selectFil(el)         { pill(el); state.filTranslation  = el.dataset.fil; }
-function selectSlideTheme(el)  { card(el); state.slideTheme      = el.dataset.theme; if(state.outline) renderPreview(); }
-function selectInclude(el)     { pill(el); state.includeScripture= el.dataset.inc;  if(state.outline) renderPreview(); }
-
-function pill(el) { el.closest('.lang-pills').querySelectorAll('.lang-pill').forEach(p=>p.classList.remove('active')); el.classList.add('active'); }
-function card(el) { el.closest('.type-grid').querySelectorAll('.type-card').forEach(c=>c.classList.remove('active'));   el.classList.add('active'); }
-
-// ── SETTINGS ──────────────────────────────────────────────────────────────────
-function saveDefaults() {
-  const d = {
-    church:   document.getElementById('default-church').value,
-    preacher: document.getElementById('default-preacher').value,
-    lang:     document.getElementById('default-lang').value,
-  };
-  localStorage.setItem('ppt_defaults', JSON.stringify(d));
-}
-
-// ── API HELPER ────────────────────────────────────────────────────────────────
-async function callAI(prompt, system, maxTokens = 1800) {
-  const res = await fetch(BACKEND_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-church-pass': state.pass },
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      messages: [{ role:'user', content: prompt }],
-      system,
-      max_tokens: maxTokens
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1000,
+      messages: [{ role: "user", content: prompt }]
     })
   });
-
-  if (res.status === 401) {
-    logout();
-    throw new Error('Session expired. Please re-enter your passphrase.');
-  }
-  if (!res.ok) {
-    const d = await res.json().catch(()=>({}));
-    throw new Error(d.error || 'Server error ' + res.status);
-  }
-  const data = await res.json();
+  const data = await response.json();
+  if (data.error) throw new Error(data.error.message);
   return data.content[0].text;
 }
 
-function setStatus(id, type, msg) {
-  const box = document.getElementById(id);
-  box.className = 'status-box ' + type + ' show';
-  if (type === 'loading') box.innerHTML = `<div class="spinner"></div><span>${msg}</span>`;
-  else box.innerHTML = `<span>${type==='success'?'✅':'❌'} ${msg}</span>`;
-}
-function hideStatus(id) { document.getElementById(id).classList.remove('show'); }
+// ── AI Lyrics Preview Panel ────────────────────────────────────
+function AILyricsPreview({ title, artist, category, songKey, onUse, onClose }) {
+  const [lyrics,    setLyrics]    = useState("");
+  const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState("");
+  const [generated, setGenerated] = useState(0); // count for regenerate
 
-// ── GENERATE OUTLINE ──────────────────────────────────────────────────────────
-async function generateOutline() {
-  const title = document.getElementById('sermon-title').value.trim();
-  const verse  = document.getElementById('sermon-verse').value.trim();
-  const aud    = document.getElementById('sermon-audience').value;
-  const notes  = document.getElementById('sermon-notes').value.trim();
-  if (!title) { alert('Please enter a sermon title or topic first.'); return; }
+  useEffect(() => {
+    setLoading(true); setError(""); setLyrics("");
+    generateAILyrics(title, artist, category, songKey)
+      .then(txt => { setLyrics(txt); setLoading(false); })
+      .catch(e  => { setError("Could not generate lyrics. Please try again."); setLoading(false); });
+  }, [generated]);
 
-  document.getElementById('btn-generate').disabled = true;
-  setStatus('status-sermon', 'loading', 'Generating outline...');
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(10,20,50,0.7)", zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}
+         onClick={e => e.target===e.currentTarget && onClose()}>
+      <div className="fade-in" style={{ background:WHITE, borderRadius:18, width:"100%", maxWidth:520, maxHeight:"90vh", display:"flex", flexDirection:"column", boxShadow:"0 12px 48px rgba(0,0,0,0.35)", overflow:"hidden" }}>
 
-  const system = `You are an expert pastor and sermon writer. Generate clear, biblically sound, practical sermon outlines.
-Always use ${state.translation} for scripture references. Write in ${state.lang}.
-Output ONLY the outline text — no markdown headers, no preamble.`;
-
-  const prompt = `Generate a complete ${state.sermonType} sermon outline for a ${aud} audience.
-Title: "${title}"${verse ? `\nKey Verse: ${verse}` : ''}${notes ? `\nContext: ${notes}` : ''}
-
-Format exactly:
-
-TITLE: [Sermon Title]
-KEY VERSE: [Reference] — "[verse text]"
-
-INTRODUCTION
-[2-3 sentence opening hook]
-
-MAIN POINTS:
-
-I. [First Point Title]
-   - [Supporting point]
-   - [Supporting point]
-   Scripture: [Reference] — "[short quote]"
-
-II. [Second Point Title]
-   - [Supporting point]
-   - [Supporting point]
-   Scripture: [Reference] — "[short quote]"
-
-III. [Third Point Title]
-   - [Supporting point]
-   - [Supporting point]
-   Scripture: [Reference] — "[short quote]"
-
-CONCLUSION
-[2-3 sentence call to action]
-
-SUGGESTED THEMES: [4-6 comma-separated themes from this sermon]`;
-
-  try {
-    const result = await callAI(prompt, system, 1800);
-    state.outline = result;
-    state.sermonTitle = title;
-
-    const themesMatch = result.match(/SUGGESTED THEMES[^:]*:\s*(.+)$/m);
-    const themes = themesMatch ? themesMatch[1].split(',').map(t=>t.trim()).filter(Boolean) : [];
-    const cleanOutline = result.replace(/SUGGESTED THEMES[^:]*:.+$/m,'').trim();
-
-    document.getElementById('outline-editor').value = cleanOutline;
-    document.getElementById('outline-result').style.display = 'block';
-    document.getElementById('quick-themes').innerHTML = themes.map(t =>
-      `<span class="theme-chip" onclick="jumpToScripture('${t}')">${t}</span>`
-    ).join('');
-
-    setStatus('status-sermon', 'success', 'Outline ready! Edit freely, then build slides.');
-    document.getElementById('step1').className = 'step done';
-    document.getElementById('step2').className = 'step active';
-    renderPreview();
-    updateConnStatus(true);
-  } catch(e) {
-    setStatus('status-sermon', 'error', e.message);
-    if (e.message.includes('passphrase')) logout();
-    updateConnStatus(false);
-  }
-  document.getElementById('btn-generate').disabled = false;
-}
-
-function jumpToScripture(theme) {
-  document.getElementById('scripture-topic').value = theme;
-  showTab('scripture');
-  setTimeout(() => findScriptures(), 200);
-}
-function goToExport() {
-  document.getElementById('step2').className = 'step done';
-  document.getElementById('step3').className = 'step active';
-  showTab('export');
-}
-
-// ── FIND SCRIPTURES ───────────────────────────────────────────────────────────
-async function findScriptures() {
-  const topic = document.getElementById('scripture-topic').value.trim();
-  const count = document.getElementById('scripture-count').value;
-  if (!topic) { alert('Enter a topic or theme to search.'); return; }
-
-  document.getElementById('btn-scripture').disabled = true;
-  setStatus('status-scripture', 'loading', `Searching scriptures on "${topic}"...`);
-  document.getElementById('scripture-results').innerHTML = '';
-
-  const inclFil = state.filTranslation !== 'none';
-  const system = `You are a biblical scholar. Suggest scriptures relevant to sermon topics. Return only valid JSON — no extra text, no markdown fences.`;
-  const prompt = `Find ${count} Bible scriptures for the topic: "${topic}"
-Return ONLY valid JSON:
-{"scriptures":[{"reference":"John 3:16","translation":"${state.translation}","english_text":"verse text here"${inclFil?`,"filipino_translation":"${state.filTranslation}","filipino_text":"verse in ${state.filTranslation} here"`:''},"connection":"how this connects to topic","tag":"CATEGORY"}]}`;
-
-  try {
-    const raw = await callAI(prompt, system, 2500);
-    const clean = raw.replace(/```json|```/g,'').trim();
-    const parsed = JSON.parse(clean);
-    state.scriptures = parsed.scriptures || [];
-
-    const container = document.getElementById('scripture-results');
-    container.innerHTML = state.scriptures.length ? state.scriptures.map(s => `
-      <div class="scripture-card">
-        <div class="scripture-card-header">
-          <span class="scripture-ref">${s.reference}</span>
-          <span class="scripture-tag">${s.tag||''}</span>
+        {/* Header */}
+        <div style={{ background:`linear-gradient(135deg,${PURPLE},#8B5CF6)`, padding:"16px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
+          <div>
+            <div style={{ color:WHITE, fontSize:16, fontWeight:800 }}>✨ AI Lyrics Suggestion</div>
+            <div style={{ color:"rgba(255,255,255,0.65)", fontSize:12, marginTop:2 }}>{title}{artist ? ` · ${artist}` : ""}{songKey ? ` · Key of ${songKey}` : ""}</div>
+          </div>
+          <button onClick={onClose} style={{ background:"rgba(255,255,255,0.15)", border:"none", color:WHITE, borderRadius:8, width:30, height:30, cursor:"pointer", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
         </div>
-        <div class="scripture-body">
-          <div class="scripture-label">${s.translation||state.translation}</div>
-          <div class="scripture-verse-en">"${s.english_text}"</div>
-          ${s.filipino_text?`<div class="scripture-divider"></div><div class="scripture-label">${s.filipino_translation||state.filTranslation}</div><div class="scripture-verse-fil">"${s.filipino_text}"</div>`:''}
-          ${s.connection?`<div class="scripture-connection">💡 ${s.connection}</div>`:''}
+
+        {/* Notice */}
+        <div style={{ background:"#FEF9C3", borderBottom:"1px solid #FDE047", padding:"8px 16px", fontSize:11, color:"#854D0E", display:"flex", gap:6, alignItems:"center", flexShrink:0 }}>
+          <span>⚠️</span>
+          <span>AI-generated suggestion — please review and edit before use. Verify accuracy with the original song.</span>
         </div>
-      </div>`).join('') :
-      '<div class="empty-state"><div class="empty-icon">📖</div><p>No scriptures found. Try a different topic.</p></div>';
 
-    setStatus('status-scripture', 'success', `Found ${state.scriptures.length} scriptures.`);
-    updateConnStatus(true);
-  } catch(e) {
-    setStatus('status-scripture', 'error', e.message);
-    updateConnStatus(false);
-  }
-  document.getElementById('btn-scripture').disabled = false;
+        {/* Content */}
+        <div style={{ flex:1, overflowY:"auto", padding:"16px 20px" }}>
+          {loading && (
+            <div style={{ textAlign:"center", padding:"40px 0", color:MUTED }}>
+              <div className="spin" style={{ fontSize:28, display:"block", marginBottom:12 }}>✨</div>
+              <div style={{ fontSize:14, fontWeight:600, color:NAVY }}>Generating lyrics…</div>
+              <div style={{ fontSize:12, marginTop:4 }}>This takes a few seconds</div>
+            </div>
+          )}
+          {error && (
+            <div style={{ background:"#FEE2E2", border:"1px solid #FCA5A5", borderRadius:10, padding:"14px 16px", color:"#991B1B", fontSize:13 }}>
+              ⚠️ {error}
+            </div>
+          )}
+          {!loading && !error && lyrics && (
+            <pre style={{ fontSize:13, color:"#1a2744", lineHeight:1.9, fontFamily:"'Courier New',monospace", whiteSpace:"pre-wrap", wordBreak:"break-word", margin:0 }}>
+              {lyrics}
+            </pre>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div style={{ borderTop:`1px solid ${BORDER}`, padding:"14px 20px", display:"flex", gap:9, flexShrink:0, background:"#F8FAFF" }}>
+          <button
+            onClick={() => setGenerated(x => x+1)}
+            disabled={loading}
+            style={{ ...G, fontSize:13, opacity:loading?0.5:1 }}>
+            🔄 Regenerate
+          </button>
+          <button
+            onClick={onClose}
+            style={{ ...G, fontSize:13 }}>
+            ✏️ Type Manually
+          </button>
+          <button
+            onClick={() => onUse(lyrics)}
+            disabled={loading || !lyrics}
+            style={{ ...B, background: (loading||!lyrics) ? "#A0B0CC" : PURPLE, color:WHITE, fontSize:13, marginLeft:"auto", cursor:(loading||!lyrics)?"not-allowed":"pointer" }}>
+            ✅ Use These Lyrics
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-// ── SLIDE HELPERS ─────────────────────────────────────────────────────────────
-function getTheme() {
-  return {
-    navy:  { bg:'0B2B5C', header:'1A4F9C', accent:'C9A84C', text:'FFFFFF', sub:'5B9BD5', card:'0D2E6A' },
-    royal: { bg:'1A4F9C', header:'2E6FC4', accent:'C9A84C', text:'FFFFFF', sub:'D6E4F7', card:'144090' },
-    dark:  { bg:'0A0F1E', header:'0D2B5C', accent:'5B9BD5', text:'FFFFFF', sub:'A0BEDD', card:'111830' },
-    light: { bg:'F0F6FF', header:'0B2B5C', accent:'C9A84C', text:'1A2A4A', sub:'3A5A8A', card:'FFFFFF' },
-  }[state.slideTheme] || {};
+// ── AI Lyrics Tab ──────────────────────────────────────────────
+function AILyricsTab({ week, songs, onAddSong }) {
+  const [form,       setForm]       = useState({ title:"", artist:"", category:CATEGORIES[1], key:"" });
+  const [showPreview,setShowPreview] = useState(false);
+  const [accepted,   setAccepted]   = useState("");
+  const [adding,     setAdding]     = useState(false);
+  const [added,      setAdded]      = useState(false);
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+
+  function handleUse(lyrics) { setAccepted(lyrics); setShowPreview(false); }
+
+  async function handleAddToSongList() {
+    if (!accepted || !form.title.trim()) return;
+    setAdding(true);
+    await onAddSong({ title:form.title.trim(), artist:form.artist, category:form.category, key:form.key, lyrics:accepted, notes:"", tempo:"", youtube:"", id:Date.now().toString() });
+    setAdding(false); setAdded(true);
+    setTimeout(() => setAdded(false), 3000);
+  }
+
+  return (
+    <div>
+      {/* Intro card */}
+      <div style={{ background:`linear-gradient(135deg,${PURPLE},#7C3AED)`, borderRadius:14, padding:"18px 20px", marginBottom:20, color:WHITE }}>
+        <div style={{ fontSize:22, marginBottom:6 }}>✨</div>
+        <div style={{ fontSize:17, fontWeight:800, marginBottom:4 }}>AI Lyrics Assistant</div>
+        <div style={{ fontSize:13, opacity:0.8 }}>Enter a song title and let AI generate a structured lyrics and chord chart for your team. Review and edit before use.</div>
+      </div>
+
+      {/* Search Form */}
+      <div style={{ background:WHITE, borderRadius:14, border:`1px solid ${BORDER}`, padding:"18px 20px", marginBottom:16 }}>
+        <div style={{ fontSize:13, fontWeight:700, color:NAVY, marginBottom:14 }}>Song Details</div>
+        <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+          <div>
+            <label style={LB}>Song Title *</label>
+            <input style={IN} value={form.title} onChange={e=>set("title",e.target.value)} placeholder="e.g. Way Maker, Great Are You Lord…"/>
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
+            <div>
+              <label style={LB}>Artist / Composer</label>
+              <input style={IN} value={form.artist} onChange={e=>set("artist",e.target.value)} placeholder="e.g. Sinach, Hillsong"/>
+            </div>
+            <div>
+              <label style={LB}>Category</label>
+              <select style={IN} value={form.category} onChange={e=>set("category",e.target.value)}>
+                {CATEGORIES.map(c=><option key={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
+            <div>
+              <label style={LB}>Musical Key <span style={{ fontWeight:400, textTransform:"none", fontSize:10 }}>(optional — for chords)</span></label>
+              <select style={IN} value={form.key} onChange={e=>set("key",e.target.value)}>
+                <option value="">— No chords —</option>
+                {KEYS.map(k=><option key={k}>{k}</option>)}
+              </select>
+            </div>
+          </div>
+          <button
+            onClick={() => { setAccepted(""); setShowPreview(true); }}
+            disabled={!form.title.trim()}
+            style={{ ...B, background:form.title.trim()?PURPLE:"#A0B0CC", color:WHITE, fontSize:14, cursor:form.title.trim()?"pointer":"not-allowed" }}>
+            ✨ Generate Lyrics
+          </button>
+        </div>
+      </div>
+
+      {/* Accepted Lyrics Preview */}
+      {accepted && (
+        <div className="fade-in" style={{ background:WHITE, borderRadius:14, border:`2px solid ${PURPLE}`, overflow:"hidden" }}>
+          <div style={{ background:`linear-gradient(90deg,${PURPLE},#7C3AED)`, padding:"12px 16px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+            <div>
+              <div style={{ color:WHITE, fontWeight:700, fontSize:14 }}>✅ Lyrics Ready — {form.title}</div>
+              <div style={{ color:"rgba(255,255,255,0.6)", fontSize:11 }}>Review below · Will be added to {weekLabel(week)}</div>
+            </div>
+            <button onClick={()=>setShowPreview(true)} style={{ ...G, fontSize:11, color:WHITE, borderColor:"rgba(255,255,255,0.3)", padding:"4px 10px" }}>Edit / Regenerate</button>
+          </div>
+          <div style={{ padding:"14px 16px" }}>
+            <pre style={{ fontSize:12, color:"#1a2744", lineHeight:1.9, fontFamily:"'Courier New',monospace", whiteSpace:"pre-wrap", maxHeight:300, overflowY:"auto", margin:0 }}>{accepted}</pre>
+            <div style={{ marginTop:14, display:"flex", gap:9, alignItems:"center" }}>
+              <button
+                onClick={handleAddToSongList}
+                disabled={adding||added}
+                style={{ ...B, background:adding||added?"#A0B0CC":GREEN, color:WHITE, fontSize:13, cursor:adding||added?"not-allowed":"pointer" }}>
+                {adding ? "Adding…" : added ? "✓ Added to Song List!" : `➕ Add to ${weekLabel(week)}`}
+              </button>
+              <span style={{ fontSize:11, color:MUTED }}>or copy the text above to use elsewhere</span>
+            </div>
+            {added && <div style={{ marginTop:10, background:"#D1FAE5", border:"1px solid #6EE7B7", borderRadius:8, padding:"8px 12px", fontSize:12, color:"#065F46", fontWeight:600 }}>✓ Song added to the list! Switch to "Manage Songs" tab to view it.</div>}
+          </div>
+        </div>
+      )}
+
+      {!accepted && (
+        <div style={{ textAlign:"center", padding:"40px 0", color:MUTED }}>
+          <div style={{ fontSize:44, opacity:0.15, marginBottom:10 }}>✨</div>
+          <div style={{ fontSize:14, fontWeight:600, color:NAVY, marginBottom:4 }}>Enter a song title above</div>
+          <div style={{ fontSize:12 }}>AI will suggest structured lyrics and chords for your team to reference.</div>
+        </div>
+      )}
+
+      {showPreview && (
+        <AILyricsPreview
+          title={form.title} artist={form.artist}
+          category={form.category} songKey={form.key}
+          onUse={handleUse}
+          onClose={() => setShowPreview(false)}
+        />
+      )}
+    </div>
+  );
 }
 
-function parseOutlineToSlides() {
-  const text = document.getElementById('outline-editor')?.value || state.outline;
-  if (!text) return [];
-  const slides = [];
-  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
-  let titleSlide = { type:'title', title:state.sermonTitle||'Sermon', verse:'' };
-  let cur = null;
-
-  for (const line of lines) {
-    if (line.startsWith('TITLE:'))     { titleSlide.title = line.replace('TITLE:','').trim(); }
-    else if (line.startsWith('KEY VERSE:')) { titleSlide.verse = line.replace('KEY VERSE:','').trim(); }
-    else if (/^INTRODUCTION/i.test(line)) { slides.push(titleSlide); cur = { type:'intro', title:'Introduction', points:[], scripture:'' }; }
-    else if (/^(MAIN POINTS?|BODY):?$/i.test(line)) { if(cur) slides.push(cur); cur=null; }
-    else if (/^[IVX]+\.\s/.test(line) || /^\d+\.\s/.test(line)) { if(cur) slides.push(cur); cur={ type:'point', title:line.replace(/^[\w.]+\s+/,''), points:[], scripture:'' }; }
-    else if (/^CONCLUSION/i.test(line)) { if(cur) slides.push(cur); cur={ type:'conclusion', title:'Conclusion', points:[], scripture:'' }; }
-    else if (/^Scripture:/i.test(line) && cur) { cur.scripture = line.replace(/^Scripture:\s*/i,''); }
-    else if (line.startsWith('-') && cur) { cur.points.push(line.replace(/^[-•]\s*/,'')); }
-    else if (cur && line.length>10 && !line.startsWith('SUGGESTED')) { cur.points.push(line); }
+// ── Login Screen ───────────────────────────────────────────────
+function LoginScreen() {
+  const [pass,setPass]=useState(""), [showPass,setShowPass]=useState(false);
+  const [error,setError]=useState(""), [loading,setLoading]=useState(false);
+  async function handleLogin() {
+    if (!pass.trim()) return;
+    if (pass !== TEAM_PASSPHRASE) { setError("Incorrect password. Please try again."); setPass(""); return; }
+    setLoading(true); setError("");
+    try { await auth.signInAnonymously(); }
+    catch(e) { setError("Connection error. Please try again."); setLoading(false); }
   }
-  if (cur) slides.push(cur);
+  return (
+    <div style={{ minHeight:"100vh", background:`linear-gradient(135deg,#0F2550 0%,#1B3A6B 60%,#2a4f8f 100%)`, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+      <div style={{ width:"100%", maxWidth:380 }}>
+        <div style={{ textAlign:"center", marginBottom:32 }}>
+          <div style={{ width:72, height:72, borderRadius:18, background:GOLD, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px", boxShadow:"0 4px 24px rgba(201,168,76,0.4)" }}>
+            <svg width="38" height="38" viewBox="0 0 24 24" fill="none"><path d="M9 18V5l12-2v13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="6" cy="18" r="3" stroke="white" strokeWidth="2"/><circle cx="18" cy="16" r="3" stroke="white" strokeWidth="2"/></svg>
+          </div>
+          <div style={{ color:WHITE, fontSize:22, fontWeight:800, marginBottom:4 }}>UCC Pasay Music Team</div>
+          <div style={{ color:GOLD, fontSize:12, fontWeight:600, letterSpacing:"0.5px" }}>Universal Church of Christ Inc. · Pasay City</div>
+        </div>
+        <div style={{ background:WHITE, borderRadius:20, padding:"30px 28px", boxShadow:"0 12px 48px rgba(0,0,0,0.3)" }}>
+          <div style={{ marginBottom:22 }}>
+            <div style={{ fontSize:17, fontWeight:800, color:NAVY, marginBottom:4 }}>Team Access</div>
+            <div style={{ fontSize:13, color:MUTED }}>Enter the team password to continue.</div>
+          </div>
+          <div style={{ marginBottom:16 }}>
+            <label style={LB}>Team Password</label>
+            <div style={{ position:"relative" }}>
+              <input style={{ ...IN, paddingRight:44, letterSpacing:showPass?"normal":"4px" }} type={showPass?"text":"password"} value={pass} onChange={e=>{setPass(e.target.value);setError("");}} onKeyDown={e=>e.key==="Enter"&&handleLogin()} placeholder="Enter password" autoFocus disabled={loading}/>
+              <button onClick={()=>setShowPass(x=>!x)} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:MUTED, fontSize:16, padding:4 }}>{showPass?"🙈":"👁️"}</button>
+            </div>
+            {error && <div style={{ marginTop:8, background:"#FEE2E2", border:"1px solid #FCA5A5", borderRadius:8, padding:"8px 12px", fontSize:12, color:"#991B1B", fontWeight:600 }}>⚠️ {error}</div>}
+          </div>
+          <button onClick={handleLogin} disabled={!pass.trim()||loading} style={{ ...B, width:"100%", background:(!pass.trim()||loading)?"#A0B0CC":NAVY, color:WHITE, fontSize:15, padding:"12px 20px", cursor:(!pass.trim()||loading)?"not-allowed":"pointer" }}>
+            {loading?"Signing in…":"Enter Hub"}
+          </button>
+        </div>
+        <div style={{ textAlign:"center", marginTop:18, color:"rgba(255,255,255,0.35)", fontSize:11 }}>For team members only · Contact your music coordinator for access</div>
+      </div>
+    </div>
+  );
+}
 
-  if (state.includeScripture !== 'no' && state.scriptures.length) {
-    state.scriptures.slice(0,3).forEach((s,i) => {
-      slides.splice(Math.min(2+i, slides.length), 0, { type:'scripture', ref:s.reference, english:s.english_text, filipino:s.filipino_text, filTrans:s.filipino_translation });
+// ── Auth Gate ──────────────────────────────────────────────────
+function AuthGate() {
+  const [user,setUser]=useState(undefined), [signingOut,setSigningOut]=useState(false);
+  useEffect(()=>{ if(!auth){setUser(null);return;} return auth.onAuthStateChanged(u=>setUser(u)); },[]);
+  async function handleSignOut() { setSigningOut(true); try{await auth.signOut();}catch(e){} setSigningOut(false); }
+  if (user===undefined) return <div style={{ minHeight:"100vh", background:`linear-gradient(135deg,#0F2550,#1B3A6B)`, display:"flex", alignItems:"center", justifyContent:"center" }}><div style={{ color:"rgba(255,255,255,0.5)", fontSize:14 }}>Loading…</div></div>;
+  if (!user) return <LoginScreen/>;
+  return <App onSignOut={handleSignOut} signingOut={signingOut}/>;
+}
+
+// ── Monthly Calendar ───────────────────────────────────────────
+function MonthCalendar({songs, sched, onSelectWeek}) {
+  const today=new Date(), [calYear,setCalYear]=useState(today.getFullYear()), [calMonth,setCalMonth]=useState(today.getMonth());
+  function shiftMonth(n) { let m=calMonth+n,y=calYear; if(m>11){m=0;y++;}if(m<0){m=11;y--;} setCalMonth(m);setCalYear(y); }
+  const sundays=getSundaysInMonth(calYear,calMonth), todayStr=getSunday(today);
+  return (
+    <div>
+      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:18 }}>
+        <button onClick={()=>shiftMonth(-1)} style={{ ...G, padding:"6px 14px" }}>← Prev</button>
+        <div style={{ flex:1, textAlign:"center", fontWeight:800, fontSize:16, color:NAVY }}>{monthLabel(calYear,calMonth)}</div>
+        <button onClick={()=>shiftMonth(1)} style={{ ...G, padding:"6px 14px" }}>Next →</button>
+      </div>
+      <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+        {sundays.map(w=>{
+          const team=sched[w]||{}, songList=songs[w]||[], filled=ROLES.filter(r=>team[r.key]?.trim()), isToday=w===todayStr;
+          return (
+            <div key={w} onClick={()=>onSelectWeek(w)} style={{ background:WHITE, borderRadius:14, border:`2px solid ${isToday?GOLD:BORDER}`, overflow:"hidden", cursor:"pointer", boxShadow:isToday?"0 2px 12px rgba(201,168,76,0.2)":"none" }}>
+              <div style={{ background:isToday?`linear-gradient(90deg,${NAVY},#2a4f8f)`:LIGHT, padding:"10px 15px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                <div>
+                  <div style={{ fontSize:10, fontWeight:800, color:isToday?GOLD:MUTED, textTransform:"uppercase", letterSpacing:"1px" }}>{isToday?"This Sunday":"Sunday"}</div>
+                  <div style={{ fontSize:15, fontWeight:800, color:isToday?WHITE:NAVY }}>{weekLabel(w)}</div>
+                </div>
+                <div style={{ display:"flex", gap:7, alignItems:"center" }}>
+                  {songList.length>0&&<span style={{ fontSize:11, background:isToday?"rgba(255,255,255,0.15)":"#E8F4FD", color:isToday?WHITE:"#2563EB", borderRadius:6, padding:"2px 9px", fontWeight:700 }}>🎵 {songList.length} song{songList.length!==1?"s":""}</span>}
+                  <span style={{ fontSize:12, color:isToday?"rgba(255,255,255,0.6)":MUTED }}>→</span>
+                </div>
+              </div>
+              <div style={{ padding:"10px 14px" }}>
+                {filled.length===0?<div style={{ fontSize:12, color:MUTED, fontStyle:"italic" }}>No team assigned yet</div>:(
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                    {filled.map(r=><div key={r.key} style={{ display:"flex", alignItems:"center", gap:5, background:LIGHT, borderRadius:8, padding:"4px 10px", border:`1px solid ${BORDER}` }}><span style={{ fontSize:13 }}>{r.icon}</span><div><div style={{ fontSize:9, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.3px" }}>{r.label}</div><div style={{ fontSize:12, fontWeight:700, color:NAVY }}>{team[r.key]}</div></div></div>)}
+                  </div>
+                )}
+                {songList.length>0&&<div style={{ marginTop:8, paddingTop:8, borderTop:`1px solid ${BORDER}`, display:"flex", flexWrap:"wrap", gap:5 }}>
+                  {songList.slice(0,4).map((s,i)=>{const color=CAT_COLORS[s.category]||MUTED;return<span key={s.id} style={{ fontSize:11, background:color+"18", color, borderRadius:5, padding:"2px 8px", fontWeight:600 }}>{i+1}. {s.title}</span>;})}
+                  {songList.length>4&&<span style={{ fontSize:11, color:MUTED }}>+{songList.length-4} more</span>}
+                </div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Overview Tab ───────────────────────────────────────────────
+function Overview({week, songs, sched}) {
+  const list=songs[week]||[], team=sched[week]||{}, filled=ROLES.filter(r=>team[r.key]?.trim()), [openSong,setOpenSong]=useState(null);
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+      <div style={{ background:WHITE, borderRadius:14, border:`1px solid ${BORDER}`, overflow:"hidden" }}>
+        <div style={{ background:`linear-gradient(90deg,${NAVY} 0%,#2a4f8f 100%)`, padding:"12px 16px", display:"flex", alignItems:"center", gap:10 }}>
+          <span style={{ fontSize:18 }}>👥</span><div><div style={{ color:WHITE, fontWeight:700, fontSize:14 }}>Team Schedule</div><div style={{ color:"rgba(255,255,255,0.55)", fontSize:11 }}>{weekLabel(week)}</div></div>
+        </div>
+        <div style={{ padding:"14px 16px" }}>
+          {filled.length===0?<div style={{ textAlign:"center", padding:"20px 0", color:MUTED, fontSize:13 }}>No team assigned for this Sunday yet.</div>:(
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))", gap:10 }}>
+              {filled.map(r=><div key={r.key} style={{ background:LIGHT, borderRadius:10, padding:"10px 12px", display:"flex", alignItems:"center", gap:9 }}><span style={{ fontSize:20, flexShrink:0 }}>{r.icon}</span><div style={{ minWidth:0 }}><div style={{ fontSize:10, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.4px" }}>{r.label}</div><div style={{ fontSize:13, fontWeight:700, color:NAVY, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{team[r.key]}</div></div></div>)}
+            </div>
+          )}
+        </div>
+      </div>
+      <div style={{ background:WHITE, borderRadius:14, border:`1px solid ${BORDER}`, overflow:"hidden" }}>
+        <div style={{ background:`linear-gradient(90deg,${GREEN} 0%,#22a06b 100%)`, padding:"12px 16px", display:"flex", alignItems:"center", gap:10 }}>
+          <span style={{ fontSize:18 }}>🎵</span><div><div style={{ color:WHITE, fontWeight:700, fontSize:14 }}>Song List</div><div style={{ color:"rgba(255,255,255,0.55)", fontSize:11 }}>{list.length} song{list.length!==1?"s":""} this Sunday</div></div>
+        </div>
+        <div style={{ padding:"10px 12px" }}>
+          {list.length===0?<div style={{ textAlign:"center", padding:"20px 0", color:MUTED, fontSize:13 }}>No songs added for this Sunday yet.</div>:(
+            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+              {list.map((song,i)=>{
+                const color=CAT_COLORS[song.category]||MUTED, vid=getYouTubeId(song.youtube), isOpen=openSong===song.id;
+                return (
+                  <div key={song.id} style={{ borderRadius:10, border:`1px solid ${BORDER}`, overflow:"hidden" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", cursor:"pointer" }} onClick={()=>setOpenSong(isOpen?null:song.id)}>
+                      <div style={{ width:28, height:28, borderRadius:7, background:color+"22", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><span style={{ fontSize:12, fontWeight:800, color }}>{i+1}</span></div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:5, flexWrap:"wrap" }}>
+                          <span style={{ fontWeight:700, fontSize:13, color:NAVY }}>{song.title}</span>
+                          <span style={{ fontSize:9, background:color+"22", color, borderRadius:4, padding:"1px 7px", fontWeight:700 }}>{song.category}</span>
+                          {vid&&<span style={{ fontSize:9, background:"#FFF0F0", color:RED, borderRadius:4, padding:"1px 6px", fontWeight:700, display:"inline-flex", alignItems:"center", gap:2 }}><YTIcon size={9}/> YT</span>}
+                          {song.lyrics&&<span style={{ fontSize:9, background:PURPLE+"22", color:PURPLE, borderRadius:4, padding:"1px 6px", fontWeight:700 }}>✨ Lyrics</span>}
+                        </div>
+                        <div style={{ display:"flex", gap:10, marginTop:1 }}>
+                          {song.artist&&<span style={{ fontSize:11, color:MUTED }}>{song.artist}</span>}
+                          {song.key&&<span style={{ fontSize:11, color:MUTED }}>Key: <b style={{ color:NAVY }}>{song.key}</b></span>}
+                          {song.tempo&&<span style={{ fontSize:11, color:MUTED }}>{song.tempo} BPM</span>}
+                        </div>
+                      </div>
+                      <span style={{ fontSize:12, color:MUTED }}>{isOpen?"▲":"▼"}</span>
+                    </div>
+                    {isOpen&&<div style={{ borderTop:`1px solid ${BORDER}`, padding:"10px 12px", background:"#F8FAFF" }}>
+                      {vid&&<div style={{ marginBottom:10, display:"flex", gap:10, alignItems:"flex-start" }}><a href={song.youtube} target="_blank" rel="noreferrer"><img src={`https://img.youtube.com/vi/${vid}/mqdefault.jpg`} alt="thumb" style={{ width:100, height:56, borderRadius:6, objectFit:"cover", display:"block" }}/></a><a href={song.youtube} target="_blank" rel="noreferrer" style={{ fontSize:12, color:RED, textDecoration:"none", display:"flex", alignItems:"center", gap:4, marginTop:4 }}><YTIcon size={12}/> Open on YouTube</a></div>}
+                      {song.notes&&<p style={{ fontSize:12, color:"#334", lineHeight:1.7, marginBottom:8 }}><b>Notes:</b> {song.notes}</p>}
+                      {song.lyrics&&<div><div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:5 }}><div style={{ fontSize:10, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.5px" }}>Lyrics / Chord Chart</div><CopyBtn text={song.lyrics}/></div><pre style={{ fontSize:11, color:"#223", lineHeight:1.8, background:WHITE, border:`1px solid ${BORDER}`, borderRadius:7, padding:"9px 11px", fontFamily:"'Courier New',monospace", margin:0 }}>{song.lyrics}</pre></div>}
+                    </div>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Copy Button ────────────────────────────────────────────────
+function CopyBtn({ text, label="Copy Lyrics" }) {
+  const [copied, setCopied] = useState(false);
+  function handleCopy() {
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {
+      // Fallback for older browsers
+      const ta = document.createElement("textarea");
+      ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     });
   }
-  return slides;
+  return (
+    <button
+      onClick={handleCopy}
+      style={{ background: copied ? "#1A7F55" : "transparent", border: `1.5px solid ${copied ? "#1A7F55" : BORDER}`, color: copied ? "#FFFFFF" : MUTED, borderRadius: 7, padding: "3px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, transition: "all 0.2s", flexShrink: 0 }}>
+      {copied ? "✓ Copied!" : "📋 Copy"}
+    </button>
+  );
 }
 
-function renderPreview() {
-  const slides = parseOutlineToSlides();
-  const tc = getTheme();
-  if (!slides.length) return;
-  document.getElementById('slide-preview-area').innerHTML = `
-    <div class="slide-preview-grid">
-      ${slides.map((s,i) => {
-        let label='', title='', body='';
-        if (s.type==='title')      { label='COVER';      title=s.title;       body=s.verse?.substring(0,60)||''; }
-        else if (s.type==='intro') { label='INTRO';      title='Introduction'; body=(s.points[0]||'').substring(0,80); }
-        else if (s.type==='point') { label='MAIN POINT'; title=s.title.substring(0,50); body=(s.points[0]||'').substring(0,80); }
-        else if (s.type==='conclusion') { label='CONCLUSION'; title='Conclusion'; body=(s.points[0]||'').substring(0,80); }
-        else if (s.type==='scripture')  { label='SCRIPTURE';  title=s.ref;         body=`"${(s.english||'').substring(0,70)}..."`; }
-        return `<div class="slide-thumb" style="background:#${tc.bg}">
-          <div class="slide-thumb-num">${i+1}</div>
-          <div class="slide-thumb-label" style="color:#${tc.accent}">${label}</div>
-          <div class="slide-thumb-title">${title}</div>
-          <div class="slide-thumb-body" style="color:#${tc.sub}">${body}</div>
-          <div class="slide-gold-bar" style="background:linear-gradient(90deg,#${tc.accent},transparent)"></div>
-        </div>`;
-      }).join('')}
+// ── Song Card ──────────────────────────────────────────────────
+function SongCard({song, index, onEdit, onDelete}) {
+  const [open,setOpen]=useState(false), color=CAT_COLORS[song.category]||MUTED, vid=getYouTubeId(song.youtube);
+  return (
+    <div style={{ background:WHITE, borderRadius:12, border:`1px solid ${BORDER}`, overflow:"hidden" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:12, padding:"13px 15px" }}>
+        <div style={{ width:34, height:34, borderRadius:8, background:color+"22", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><span style={{ fontSize:14, fontWeight:800, color }}>{index+1}</span></div>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap", marginBottom:2 }}>
+            <span style={{ fontWeight:700, fontSize:14, color:NAVY }}>{song.title}</span>
+            <span style={{ fontSize:10, background:color+"22", color, borderRadius:5, padding:"2px 8px", fontWeight:700 }}>{song.category}</span>
+            {vid&&<span style={{ fontSize:10, background:"#FFF0F0", color:RED, borderRadius:5, padding:"2px 7px", fontWeight:700, display:"inline-flex", alignItems:"center", gap:3 }}><YTIcon size={11}/> YT</span>}
+            {song.lyrics&&<span style={{ fontSize:10, background:PURPLE+"22", color:PURPLE, borderRadius:5, padding:"2px 7px", fontWeight:700 }}>✨ Lyrics</span>}
+          </div>
+          <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
+            {song.artist&&<span style={{ fontSize:11, color:MUTED }}>{song.artist}</span>}
+            {song.key&&<span style={{ fontSize:11, color:MUTED }}>Key: <b style={{ color:NAVY }}>{song.key}</b></span>}
+            {song.tempo&&<span style={{ fontSize:11, color:MUTED }}>{song.tempo} BPM</span>}
+          </div>
+        </div>
+        <div style={{ display:"flex", gap:6, flexShrink:0 }}>
+          {vid&&<a href={song.youtube} target="_blank" rel="noreferrer" style={{ ...G, display:"inline-flex", alignItems:"center", gap:5, textDecoration:"none", color:RED, borderColor:"#FFCCCC", fontSize:11, padding:"5px 9px" }}><YTIcon size={12}/> Watch</a>}
+          <button onClick={()=>setOpen(x=>!x)} style={{ ...G, padding:"5px 11px", fontSize:12 }}>{open?"▲":"▼"}</button>
+        </div>
+      </div>
+      {open&&<div style={{ borderTop:`1px solid ${BORDER}`, padding:"13px 15px", background:"#F8FAFF" }}>
+        {vid&&<div style={{ marginBottom:12, background:WHITE, border:`1px solid ${BORDER}`, borderRadius:10, padding:"10px 12px" }}><div style={{ fontSize:10, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:7 }}>YouTube Reference</div><div style={{ display:"flex", alignItems:"flex-start", gap:11 }}><a href={song.youtube} target="_blank" rel="noreferrer"><img src={`https://img.youtube.com/vi/${vid}/mqdefault.jpg`} alt="thumbnail" style={{ width:110, height:62, borderRadius:6, objectFit:"cover", display:"block" }}/></a><div><div style={{ fontSize:13, fontWeight:600, color:NAVY, marginBottom:5 }}>{song.title}</div><a href={song.youtube} target="_blank" rel="noreferrer" style={{ fontSize:12, color:RED, textDecoration:"none", display:"flex", alignItems:"center", gap:4 }}><YTIcon size={12}/> Open on YouTube</a></div></div></div>}
+        {song.notes&&<div style={{ marginBottom:10 }}><div style={{ fontSize:10, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:4 }}>Team Notes</div><p style={{ fontSize:13, color:"#334", lineHeight:1.7, margin:0 }}>{song.notes}</p></div>}
+        {song.lyrics&&<div style={{ marginBottom:12 }}><div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:5 }}><div style={{ fontSize:10, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.5px" }}>Lyrics / Chord Chart</div><CopyBtn text={song.lyrics}/></div><pre style={{ fontSize:12, color:"#223", lineHeight:1.8, background:WHITE, border:`1px solid ${BORDER}`, borderRadius:8, padding:"11px 13px", fontFamily:"'Courier New',monospace", margin:0 }}>{song.lyrics}</pre></div>}
+        <div style={{ display:"flex", gap:7 }}>
+          <button style={{ ...G, fontSize:12, padding:"5px 13px" }} onClick={onEdit}>Edit</button>
+          <button style={{ ...G, fontSize:12, padding:"5px 13px", color:"#C0392B", borderColor:"#F5C6C6" }} onClick={onDelete}>Remove</button>
+        </div>
+      </div>}
     </div>
-    <p style="font-size:11px;color:var(--sub);text-align:center">${slides.length} slides · ${state.slideTheme} theme</p>`;
-  document.getElementById('export-actions').style.display = 'block';
+  );
 }
 
-// ── BUILD PPTX ────────────────────────────────────────────────────────────────
-async function buildAndDownloadPPTX() {
-  const slides = parseOutlineToSlides();
-  if (!slides.length) { alert('Generate a sermon outline first.'); return; }
+// ── Song Modal ─────────────────────────────────────────────────
+function SongModal({initial, onSave, onClose}) {
+  const blank={title:"",artist:"",key:"",tempo:"",category:CATEGORIES[0],notes:"",lyrics:"",youtube:""};
+  const [form,setForm]=useState(initial?{...blank,...initial}:blank);
+  const [saving,setSaving]=useState(false), [showAI,setShowAI]=useState(false);
+  const set=(k,v)=>setForm(f=>({...f,[k]:v}));
+  const vid=getYouTubeId(form.youtube);
+  async function submit() { if(!form.title.trim())return; setSaving(true); await onSave({...form,id:initial?.id||Date.now().toString(),title:form.title.trim()}); setSaving(false); }
+  return (
+    <div onClick={e=>e.target===e.currentTarget&&onClose()} style={{ position:"fixed", inset:0, background:"rgba(10,20,50,0.6)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+      <div style={{ background:WHITE, borderRadius:16, width:"100%", maxWidth:500, maxHeight:"92vh", overflowY:"auto", boxShadow:"0 8px 40px rgba(0,0,0,0.3)" }}>
+        <div style={{ background:NAVY, borderRadius:"16px 16px 0 0", padding:"17px 22px", display:"flex", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, zIndex:1 }}>
+          <span style={{ color:WHITE, fontSize:16, fontWeight:700 }}>{initial?"Edit Song":"Add Song"}</span>
+          <button onClick={onClose} style={{ background:"rgba(255,255,255,0.15)", border:"none", color:WHITE, borderRadius:7, width:28, height:28, cursor:"pointer", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
+        </div>
+        <div style={{ padding:22, display:"flex", flexDirection:"column", gap:13 }}>
+          <div><label style={LB}>Song Title *</label><input style={IN} value={form.title} onChange={e=>set("title",e.target.value)} placeholder="e.g. Great Are You Lord" autoFocus/></div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
+            <div><label style={LB}>Artist / Composer</label><input style={IN} value={form.artist} onChange={e=>set("artist",e.target.value)} placeholder="Artist name"/></div>
+            <div><label style={LB}>Category</label><select style={IN} value={form.category} onChange={e=>set("category",e.target.value)}>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></div>
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
+            <div><label style={LB}>Key</label><select style={IN} value={form.key} onChange={e=>set("key",e.target.value)}><option value="">— Select —</option>{KEYS.map(k=><option key={k}>{k}</option>)}</select></div>
+            <div><label style={LB}>Tempo (BPM)</label><input style={IN} type="number" value={form.tempo} onChange={e=>set("tempo",e.target.value)} placeholder="e.g. 120" min={40} max={240}/></div>
+          </div>
+          <div>
+            <label style={LB}>YouTube Link</label>
+            <div style={{ position:"relative" }}><div style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", pointerEvents:"none" }}><YTIcon/></div><input style={{ ...IN, paddingLeft:32 }} value={form.youtube} onChange={e=>set("youtube",e.target.value)} placeholder="https://www.youtube.com/watch?v=..."/></div>
+            {form.youtube&&!vid&&<div style={{ fontSize:11, color:"#C0392B", marginTop:4 }}>Please paste a valid YouTube URL</div>}
+            {vid&&<div style={{ display:"flex", alignItems:"center", gap:10, marginTop:7, background:"#FFF8F8", border:"1px solid #FFCCCC", borderRadius:8, padding:"7px 10px" }}><img src={`https://img.youtube.com/vi/${vid}/default.jpg`} alt="" style={{ width:56, height:32, borderRadius:4, objectFit:"cover" }}/><span style={{ fontSize:12, color:RED, fontWeight:700 }}>Video linked ✓</span></div>}
+          </div>
+          <div><label style={LB}>Team Notes</label><textarea style={{ ...IN, resize:"vertical", minHeight:65 }} value={form.notes} onChange={e=>set("notes",e.target.value)} placeholder="Key changes, transitions, special instructions…"/></div>
 
-  document.getElementById('btn-pptx').disabled = true;
-  setStatus('status-export', 'loading', 'Building slides...');
+          {/* Lyrics section with AI button */}
+          <div>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:5 }}>
+              <label style={{ ...LB, margin:0 }}>Lyrics / Chord Chart</label>
+              <button
+                onClick={()=>{ if(!form.title.trim()){alert("Please enter a song title first.");return;} setShowAI(true); }}
+                style={{ background:PURPLE, border:"none", color:WHITE, borderRadius:7, padding:"4px 11px", fontSize:11, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:5 }}>
+                ✨ AI Suggest
+              </button>
+            </div>
+            {form.lyrics ? (
+              <div>
+                <pre style={{ fontSize:12, color:"#223", lineHeight:1.8, background:LIGHT, border:`1.5px solid ${BORDER}`, borderRadius:8, padding:"10px 12px", fontFamily:"'Courier New',monospace", maxHeight:200, overflowY:"auto", margin:"0 0 6px" }}>{form.lyrics}</pre>
+                <div style={{ display:"flex", gap:7 }}>
+                  <button onClick={()=>set("lyrics","")} style={{ ...G, fontSize:11, padding:"4px 10px", color:"#C0392B", borderColor:"#F5C6C6" }}>Clear</button>
+                  <button onClick={()=>setShowAI(true)} style={{ ...G, fontSize:11, padding:"4px 10px" }}>✨ Regenerate</button>
+                </div>
+              </div>
+            ) : (
+              <textarea style={{ ...IN, resize:"vertical", minHeight:110, fontFamily:"'Courier New',monospace", fontSize:12, lineHeight:1.7 }} value={form.lyrics} onChange={e=>set("lyrics",e.target.value)} placeholder={"[Verse 1]\nPaste lyrics or chord chart here, or tap ✨ AI Suggest above…\n\n[Chorus]\n…"}/>
+            )}
+          </div>
 
-  const preacher = document.getElementById('slide-preacher').value || '';
-  const church   = document.getElementById('slide-church').value   || '';
-  const tc = getTheme();
-  const W=10, H=5.625, M=0.4, CW=W-M*2;
+          <div style={{ display:"flex", gap:9, justifyContent:"flex-end", paddingTop:4 }}>
+            <button style={G} onClick={onClose}>Cancel</button>
+            <button style={{ ...B, background:NAVY, color:WHITE, opacity:form.title.trim()&&!saving?1:0.45 }} onClick={submit} disabled={!form.title.trim()||saving}>{saving?"Saving…":initial?"Save Changes":"Add Song"}</button>
+          </div>
+        </div>
+      </div>
 
-  try {
-    const pptx = new PptxGenJS();
-    pptx.layout = 'LAYOUT_16x9';
-    pptx.title  = state.sermonTitle || 'Sermon';
+      {showAI && (
+        <AILyricsPreview
+          title={form.title} artist={form.artist}
+          category={form.category} songKey={form.key}
+          onUse={lyrics=>{ set("lyrics",lyrics); setShowAI(false); }}
+          onClose={()=>setShowAI(false)}
+        />
+      )}
+    </div>
+  );
+}
 
-    const footer = txt => ({ x:M, y:H-0.27, w:CW, h:0.22, fontSize:8.5, color:tc.sub, fontFace:'Calibri', align:'center', text:txt });
-
-    for (const s of slides) {
-      const slide = pptx.addSlide();
-
-      if (s.type === 'title') {
-        slide.addShape(pptx.shapes.RECTANGLE,{x:0,y:0,w:W,h:H,fill:{color:tc.bg},line:{color:tc.bg}});
-        slide.addShape(pptx.shapes.RECTANGLE,{x:8.2,y:0.5,w:0.06,h:2.2,fill:{color:tc.accent},line:{color:tc.accent}});
-        slide.addShape(pptx.shapes.RECTANGLE,{x:7.6,y:1.4,w:1.28,h:0.06,fill:{color:tc.accent},line:{color:tc.accent}});
-        slide.addShape(pptx.shapes.RECTANGLE,{x:0.35,y:1.2,w:0.07,h:3.2,fill:{color:tc.accent},line:{color:tc.accent}});
-        slide.addText(s.title,{x:0.6,y:1.35,w:8.8,h:1.5,fontSize:36,bold:true,color:tc.text,fontFace:'Georgia',valign:'middle'});
-        slide.addShape(pptx.shapes.RECTANGLE,{x:0.6,y:2.95,w:5.5,h:0.04,fill:{color:tc.accent},line:{color:tc.accent}});
-        if(s.verse)    slide.addText(s.verse.substring(0,120),{x:0.6,y:3.08,w:8.5,h:0.55,fontSize:13,color:tc.sub,fontFace:'Georgia',italic:true});
-        if(preacher)   slide.addText(preacher,{x:0.6,y:3.72,w:8.5,h:0.34,fontSize:14,color:tc.text,fontFace:'Calibri',bold:true});
-        if(church)     slide.addText(church,  {x:0.6,y:4.08,w:8.5,h:0.3, fontSize:12,color:tc.sub, fontFace:'Calibri'});
-      }
-      else if (s.type === 'scripture') {
-        slide.addShape(pptx.shapes.RECTANGLE,{x:0,y:0,w:W,h:H,fill:{color:tc.bg},line:{color:tc.bg}});
-        slide.addShape(pptx.shapes.RECTANGLE,{x:0,y:0,w:W,h:0.58,fill:{color:tc.header},line:{color:tc.header}});
-        slide.addShape(pptx.shapes.RECTANGLE,{x:0,y:0.58,w:W,h:0.04,fill:{color:tc.accent},line:{color:tc.accent}});
-        slide.addText('Scripture',{x:M,y:0.1,w:9,h:0.38,fontSize:10,color:tc.sub,fontFace:'Calibri',italic:true});
-        slide.addShape(pptx.shapes.RECTANGLE,{x:0.6,y:0.78,w:8.8,h:3.95,fill:{color:tc.card},line:{color:tc.header,width:1}});
-        slide.addShape(pptx.shapes.RECTANGLE,{x:0.6,y:0.78,w:0.07,h:3.95,fill:{color:tc.accent},line:{color:tc.accent}});
-        slide.addText(s.ref,{x:0.85,y:0.92,w:8.2,h:0.38,fontSize:14,bold:true,color:tc.accent,fontFace:'Georgia'});
-        const hasFil = state.includeScripture==='yes' && s.filipino;
-        const enH = hasFil ? 1.4 : 2.8;
-        const en  = (s.english||'').substring(0,350);
-        slide.addText(`"${en}"`,{x:0.85,y:1.36,w:8.1,h:enH,fontSize:en.length>200?12:14,color:tc.text,fontFace:'Georgia',italic:true,valign:'top'});
-        if (hasFil && s.filipino) {
-          const fil = s.filipino.substring(0,300);
-          slide.addShape(pptx.shapes.RECTANGLE,{x:0.85,y:1.36+enH+0.08,w:8,h:0.02,fill:{color:tc.sub},line:{color:tc.sub}});
-          slide.addText(s.filTrans||'Filipino',{x:0.85,y:1.36+enH+0.15,w:8.1,h:0.22,fontSize:9,color:tc.sub,fontFace:'Calibri',bold:true});
-          slide.addText(`"${fil}"`,{x:0.85,y:1.36+enH+0.38,w:8.1,h:1.25,fontSize:fil.length>200?11:12.5,color:tc.sub,fontFace:'Calibri',italic:true,valign:'top'});
-        }
-        slide.addText(`${church?church+' · ':''}${preacher}`,footer(''));
-      }
-      else {
-        // content slide
-        const isLight = state.slideTheme==='light';
-        slide.addShape(pptx.shapes.RECTANGLE,{x:0,y:0,w:W,h:H,fill:{color:isLight?'F0F6FF':tc.bg},line:{color:isLight?'F0F6FF':tc.bg}});
-        slide.addShape(pptx.shapes.RECTANGLE,{x:0,y:0,w:W,h:0.62,fill:{color:tc.header},line:{color:tc.header}});
-        slide.addShape(pptx.shapes.RECTANGLE,{x:0,y:0.62,w:W,h:0.04,fill:{color:tc.accent},line:{color:tc.accent}});
-        const typeLabel = s.type==='intro'?'INTRODUCTION':s.type==='conclusion'?'CONCLUSION':'MAIN POINT';
-        slide.addText(typeLabel,{x:6.8,y:0.08,w:3,h:0.26,fontSize:9,color:tc.sub,fontFace:'Calibri',italic:true,align:'right'});
-        slide.addText(s.title.substring(0,80),{x:M,y:0.1,w:7.8,h:0.44,fontSize:18,bold:true,color:'FFFFFF',fontFace:'Georgia',valign:'middle'});
-
-        let cursor = 0.82;
-        const botLimit = 4.85;
-        const txtColor = isLight ? '1A2A4A' : 'FFFFFF';
-        const cardBg   = isLight ? 'EBF3FC' : tc.card;
-
-        (s.points||[]).slice(0,6).forEach(pt => {
-          if (cursor+0.44 > botLimit) return;
-          const ptTxt = pt.substring(0,140);
-          slide.addShape(pptx.shapes.RECTANGLE,{x:M,y:cursor,w:CW,h:0.44,fill:{color:cardBg},line:{color:tc.header,width:0.5}});
-          slide.addShape(pptx.shapes.RECTANGLE,{x:M,y:cursor,w:0.06,h:0.44,fill:{color:tc.accent},line:{color:tc.accent}});
-          slide.addText(ptTxt,{x:M+0.16,y:cursor+0.04,w:CW-0.22,h:0.36,fontSize:ptTxt.length>100?11.5:13,color:txtColor,fontFace:'Calibri',valign:'middle'});
-          cursor += 0.5;
-        });
-
-        if (s.scripture && cursor+0.55 < botLimit) {
-          slide.addShape(pptx.shapes.RECTANGLE,{x:M,y:cursor+0.04,w:CW,h:0.5,fill:{color:tc.header},line:{color:tc.accent,width:1}});
-          slide.addText([
-            {text:'\u201C',options:{fontSize:16,color:tc.accent,bold:true}},
-            {text:s.scripture.substring(0,120)+'\u201D',options:{fontSize:11,color:'FFFFFF',italic:true}}
-          ],{x:M+0.12,y:cursor+0.06,w:CW-0.18,h:0.44,fontFace:'Georgia',valign:'middle'});
-        }
-        slide.addText(`${church?church+' · ':''}${preacher}`,{x:M,y:H-0.27,w:CW,h:0.22,fontSize:8.5,color:tc.sub,fontFace:'Calibri',align:'center'});
-      }
+// ── Team Schedule ──────────────────────────────────────────────
+function TeamSchedule({week, sched, onSave}) {
+  const [form,setForm]=useState(sched[week]||{}), [saving,setSaving]=useState(false), [saved,setSaved]=useState(true);
+  const [dbStatus,setDbStatus]=useState("");
+  useEffect(()=>{setForm(sched[week]||{});setSaved(true);},[week]); // only reset on week change, not on every Firebase update
+  // Pre-fill from Firebase when sched loads for the first time for this week
+  useEffect(()=>{
+    if(sched[week] && Object.keys(sched[week]).length > 0){
+      setForm(f => Object.keys(f).some(k=>f[k]) ? f : sched[week]);
     }
-
-    const fn = (state.sermonTitle||'Sermon').replace(/[^a-z0-9]/gi,'_').substring(0,40)+'_slides.pptx';
-    await pptx.writeFile({ fileName: fn });
-    setStatus('status-export','success',`Downloaded: ${fn}`);
-  } catch(e) {
-    setStatus('status-export','error','Error: '+e.message);
+  },[sched[week]]);
+  const set=(k,v)=>{setForm(f=>({...f,[k]:v}));setSaved(false);};
+  const filled=ROLES.filter(r=>form[r.key]?.trim());
+  async function save(){
+    setSaving(true);
+    setDbStatus("Saving…");
+    try {
+      await onSave(week,form);
+      setDbStatus("✓ Saved successfully!");
+      setSaved(true);
+    } catch(e) {
+      setDbStatus("✗ " + (e.message||"Unknown error"));
+    }
+    setSaving(false);
   }
-  document.getElementById('btn-pptx').disabled = false;
+  return (
+    <div>
+      {filled.length>0&&<div style={{ background:WHITE, border:`1px solid ${BORDER}`, borderRadius:12, padding:"14px 16px", marginBottom:20 }}><div style={{ fontSize:10, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.6px", marginBottom:10 }}>This Week's Team</div><div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>{filled.map(r=><div key={r.key} style={{ background:LIGHT, border:`1px solid ${BORDER}`, borderRadius:20, padding:"6px 14px", display:"flex", alignItems:"center", gap:8 }}><span style={{ fontSize:18 }}>{r.icon}</span><div><div style={{ fontSize:9, fontWeight:700, color:MUTED, textTransform:"uppercase", letterSpacing:"0.4px" }}>{r.label}</div><div style={{ fontSize:13, fontWeight:700, color:NAVY }}>{form[r.key]}</div></div></div>)}</div></div>}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(230px,1fr))", gap:12, marginBottom:18 }}>
+        {ROLES.map(r=><div key={r.key} style={{ background:WHITE, borderRadius:12, border:`1px solid ${BORDER}`, padding:"14px 15px" }}><div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:9 }}><div style={{ width:34, height:34, borderRadius:8, background:NAVY+"15", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>{r.icon}</div><label style={{ ...LB, margin:0, fontSize:12 }}>{r.label}</label></div><input style={{ ...IN, fontSize:13 }} value={form[r.key]||""} onChange={e=>set(r.key,e.target.value)} placeholder="Enter name…"/></div>)}
+      </div>
+      <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
+        <button style={{ ...B, background:NAVY, color:WHITE, opacity:saving?0.6:1 }} onClick={save} disabled={saving}>{saving?"Saving…":"Save Schedule"}</button>
+        {saved&&filled.length>0&&!dbStatus&&<span style={{ fontSize:13, color:"#1A7F55", fontWeight:600 }}>✓ Saved</span>}
+        {!saved&&!dbStatus&&<span style={{ fontSize:13, color:GOLD, fontWeight:600 }}>● Unsaved changes</span>}
+        {dbStatus&&<span style={{ fontSize:13, fontWeight:600, color:dbStatus.startsWith("✓")?"#1A7F55":dbStatus==="Saving…"?GOLD:"#C0392B" }}>{dbStatus}</span>}
+      </div>
+      {filled.length===0&&<div style={{ textAlign:"center", padding:"50px 0", color:MUTED }}><div style={{ fontSize:40, opacity:0.2, marginBottom:10 }}>👥</div><div style={{ fontWeight:700, fontSize:15, color:NAVY, marginBottom:4 }}>No team assigned yet</div><div style={{ fontSize:13 }}>Fill in the names above and tap Save Schedule.</div></div>}
+    </div>
+  );
 }
+
+// ── App ────────────────────────────────────────────────────────
+function App({ onSignOut, signingOut }) {
+  const [songs,setSongs]=useState({}), [sched,setSched]=useState({});
+  const [week,setWeek]=useState(getSunday(new Date())), [tab,setTab]=useState("calendar");
+  const [modal,setModal]=useState(false), [editing,setEditing]=useState(null);
+  const [search,setSearch]=useState(""), [catFilter,setCat]=useState("All");
+  const [toast,setToast]=useState(null), [status,setStatus]=useState("connecting");
+
+  const notify=(msg,type="success")=>{setToast({msg,type});setTimeout(()=>setToast(null),3500);};
+
+  useEffect(()=>{
+    if(!db){setStatus("error");return;}
+    const sRef=db.ref("songs"), scRef=db.ref("schedule");
+    sRef.on("value",snap=>{const val=snap.val()||{},out={};Object.keys(val).forEach(k=>{out[keyToDate(k)]=Object.values(val[k]||{});});setSongs(out);setStatus("online");},()=>setStatus("error"));
+    scRef.on("value",snap=>{const val=snap.val()||{},out={};Object.keys(val).forEach(k=>{out[keyToDate(k)]=val[k];});setSched(out);});
+    return()=>{sRef.off();scRef.off();};
+  },[]);
+
+  async function saveSongs(w,list){
+    if(!db)return;
+    const obj={};
+    list.forEach(s=>{obj[s.id]=s;});
+    try {
+      await db.ref(`songs/${weekKey(w)}`).set(list.length?obj:null);
+    } catch(e) {
+      console.error("saveSongs error:", e);
+      const msg = e.code ? `Save failed: ${e.code}` : "Song save failed.";
+      notify(msg, "error");
+    }
+  }
+  async function saveSched(w,data){
+    if(!db){ notify("Database not connected.", "error"); return; }
+    // Check auth state
+    const user = auth ? auth.currentUser : null;
+    if(!user){ notify("Not signed in — please reload and log in again.", "error"); return; }
+    // Clean: only save roles that have a non-empty name
+    const clean={};
+    Object.keys(data).forEach(k=>{ if(data[k]&&data[k].trim()) clean[k]=data[k].trim(); });
+    try {
+      await db.ref(`schedule/${weekKey(w)}`).set(Object.keys(clean).length ? clean : null);
+      notify("Team schedule saved! ✓");
+    } catch(e) {
+      console.error("saveSched error:", e);
+      // Show the actual Firebase error code so we can diagnose
+      const msg = e.code ? `Save failed: ${e.code}` : "Save failed. Check console for details.";
+      notify(msg, "error");
+    }
+  }
+
+  const thisWeek=getSunday(new Date()), isThisWeek=week===thisWeek;
+  const allWeeks=[...new Set([...Object.keys(songs),...Object.keys(sched)])].sort().reverse();
+  const weekSongs=(songs[week]||[]).filter(s=>{const q=search.toLowerCase();return(!q||s.title.toLowerCase().includes(q)||(s.artist||"").toLowerCase().includes(q))&&(catFilter==="All"||s.category===catFilter);});
+
+  async function handleSongSave(song){
+    const list=[...(songs[week]||[])];
+    if(editing){const i=list.findIndex(s=>s.id===editing.id);if(i>-1)list[i]=song;else list.push(song);}else list.push(song);
+    await saveSongs(week,list);setModal(false);setEditing(null);
+    notify(editing?"Song updated!":"Song added! 🎵");
+  }
+
+  // For AI Lyrics tab: add song directly
+  async function handleAIAddSong(song){
+    const list=[...(songs[week]||[])];
+    list.push(song);
+    await saveSongs(week,list);
+    notify("Song with AI lyrics added! 🎵");
+  }
+
+  const TABS=[
+    {id:"calendar", label:"📅 Monthly View"},
+    {id:"overview", label:"📋 Sunday Schedule"},
+    {id:"songs",    label:"🎵 Manage Songs"},
+    {id:"schedule", label:"👥 Assign Team"},
+    {id:"ai",       label:"✨ AI Lyrics"},
+  ];
+
+  const statusDot={online:"#4ADE80",error:"#F87171",connecting:"#FCD34D"}[status];
+  const statusText={online:"Live",error:"Offline",connecting:"Connecting…"}[status];
+
+  return (
+    <div style={{ fontFamily:"'Segoe UI',system-ui,sans-serif", background:LIGHT, minHeight:"100vh", color:"#1a2744" }}>
+      <div style={{ background:"linear-gradient(135deg,#1B3A6B 0%,#2a4f8f 100%)" }}>
+        <div style={{ maxWidth:860, margin:"0 auto", padding:"18px 18px 0" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:13, marginBottom:14 }}>
+            <div style={{ width:42, height:42, borderRadius:10, background:GOLD, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+              <svg width="23" height="23" viewBox="0 0 24 24" fill="none"><path d="M9 18V5l12-2v13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="6" cy="18" r="3" stroke="white" strokeWidth="2"/><circle cx="18" cy="16" r="3" stroke="white" strokeWidth="2"/></svg>
+            </div>
+            <div style={{ flex:1 }}>
+              <div style={{ color:WHITE, fontSize:18, fontWeight:800, lineHeight:1.2 }}>UCC Pasay Music Team Hub</div>
+              <div style={{ color:GOLD, fontSize:11, fontWeight:600 }}>Universal Church of Christ Incorporated · Pasay City</div>
+            </div>
+            <div style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:5 }}><div style={{ width:8, height:8, borderRadius:"50%", background:statusDot }}/><span style={{ fontSize:11, color:"rgba(255,255,255,0.6)", fontWeight:500 }}>{statusText}</span></div>
+              <button onClick={onSignOut} disabled={signingOut} style={{ background:"rgba(255,255,255,0.12)", border:"1px solid rgba(255,255,255,0.2)", color:"rgba(255,255,255,0.75)", borderRadius:7, padding:"5px 11px", fontSize:11, fontWeight:600, cursor:"pointer" }}>{signingOut?"…":"Sign Out"}</button>
+            </div>
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:10, padding:"13px 0 0", borderTop:"1px solid rgba(255,255,255,0.12)" }}>
+            <button onClick={()=>setWeek(addWeeks(week,-1))} style={{ ...G, color:"rgba(255,255,255,0.75)", borderColor:"rgba(255,255,255,0.25)", padding:"5px 13px", fontSize:12 }}>← Prev</button>
+            <div style={{ flex:1, textAlign:"center" }}>
+              <div style={{ color:GOLD, fontSize:10, fontWeight:800, letterSpacing:"1.2px", textTransform:"uppercase" }}>{isThisWeek?"This Sunday":"Sunday Service"}</div>
+              <div style={{ color:WHITE, fontSize:14, fontWeight:600 }}>{weekLabel(week)}</div>
+            </div>
+            <button onClick={()=>setWeek(addWeeks(week,1))} style={{ ...G, color:"rgba(255,255,255,0.75)", borderColor:"rgba(255,255,255,0.25)", padding:"5px 13px", fontSize:12 }}>Next →</button>
+          </div>
+          {allWeeks.length>1&&<div style={{ display:"flex", gap:5, overflowX:"auto", padding:"9px 0 0", scrollbarWidth:"none" }}>{allWeeks.slice(0,10).map(w=><button key={w} onClick={()=>setWeek(w)} style={{ background:w===week?GOLD:"rgba(255,255,255,0.12)", color:WHITE, border:"none", borderRadius:6, padding:"3px 12px", fontSize:11, cursor:"pointer", whiteSpace:"nowrap", fontWeight:w===week?700:400 }}>{weekShort(w)}</button>)}</div>}
+          <div style={{ display:"flex", gap:0, marginTop:14, overflowX:"auto" }}>
+            {TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{ background:tab===t.id?"rgba(255,255,255,0.15)":"transparent", color:tab===t.id?WHITE:"rgba(255,255,255,0.5)", border:"none", borderRadius:"8px 8px 0 0", padding:"9px 14px", fontWeight:tab===t.id?700:500, fontSize:12, cursor:"pointer", borderBottom:tab===t.id?`2.5px solid ${GOLD}`:"2.5px solid transparent", whiteSpace:"nowrap" }}>{t.label}</button>)}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ maxWidth:860, margin:"0 auto", padding:"20px 18px" }}>
+        {status==="connecting"&&<div style={{ background:"#FEF9C3", border:"1px solid #FDE047", borderRadius:10, padding:"12px 16px", marginBottom:16, fontSize:13, color:"#854D0E", fontWeight:500 }}>⏳ Connecting to database…</div>}
+        {status==="error"&&<div style={{ background:"#FEE2E2", border:"1px solid #FCA5A5", borderRadius:10, padding:"12px 16px", marginBottom:16, fontSize:13, color:"#991B1B", fontWeight:500 }}>⚠️ Cannot connect to Firebase. Check your internet connection.</div>}
+
+        {tab==="calendar"&&<MonthCalendar songs={songs} sched={sched} onSelectWeek={w=>{setWeek(w);setTab("overview");}}/>}
+        {tab==="overview"&&<Overview week={week} songs={songs} sched={sched}/>}
+        {tab==="songs"&&<>
+          <div style={{ display:"flex", gap:9, marginBottom:14, flexWrap:"wrap" }}>
+            <input style={{ ...IN, width:"auto", flex:"1 1 150px", maxWidth:250 }} placeholder="Search song or artist…" value={search} onChange={e=>setSearch(e.target.value)}/>
+            <select style={{ ...IN, width:"auto" }} value={catFilter} onChange={e=>setCat(e.target.value)}><option value="All">All Categories</option>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select>
+            <button style={{ ...B, background:GOLD, color:WHITE, marginLeft:"auto" }} onClick={()=>{setEditing(null);setModal(true);}}>+ Add Song</button>
+          </div>
+          <div style={{ display:"flex", gap:9, marginBottom:18, flexWrap:"wrap" }}>
+            {[{label:"Songs This Week",val:(songs[week]||[]).length},{label:"With YouTube",val:(songs[week]||[]).filter(s=>getYouTubeId(s.youtube)).length},{label:"With Lyrics",val:(songs[week]||[]).filter(s=>s.lyrics).length},{label:"Weeks Logged",val:allWeeks.length}].map(m=><div key={m.label} style={{ background:WHITE, borderRadius:10, border:`1px solid ${BORDER}`, padding:"9px 16px", minWidth:105 }}><div style={{ fontSize:22, fontWeight:800, color:NAVY }}>{m.val}</div><div style={{ fontSize:10, color:MUTED, fontWeight:700, marginTop:1 }}>{m.label}</div></div>)}
+          </div>
+          {weekSongs.length===0?<div style={{ textAlign:"center", padding:"60px 0", color:MUTED }}><div style={{ fontSize:44, opacity:0.2, marginBottom:12 }}>♪</div><div style={{ fontWeight:700, fontSize:16, marginBottom:5, color:NAVY }}>No songs for this Sunday yet</div><div style={{ fontSize:13, marginBottom:22 }}>Add songs or use ✨ AI Lyrics to generate them.</div><div style={{ display:"flex", gap:10, justifyContent:"center" }}><button style={{ ...B, background:NAVY, color:WHITE }} onClick={()=>{setEditing(null);setModal(true);}}>Add Song</button><button style={{ ...B, background:PURPLE, color:WHITE }} onClick={()=>setTab("ai")}>✨ AI Lyrics</button></div></div>:(
+            <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
+              {weekSongs.map((song,i)=><SongCard key={song.id} song={song} index={i} onEdit={()=>{setEditing(song);setModal(true);}} onDelete={async()=>{const list=(songs[week]||[]).filter(s=>s.id!==song.id);await saveSongs(week,list);notify("Song removed","info");}}/>)}
+            </div>
+          )}
+        </>}
+        {tab==="schedule"&&<TeamSchedule week={week} sched={sched} onSave={saveSched}/>}
+        {tab==="ai"&&<AILyricsTab week={week} songs={songs} onAddSong={handleAIAddSong}/>}
+      </div>
+
+      {modal&&<SongModal initial={editing} onSave={handleSongSave} onClose={()=>{setModal(false);setEditing(null);}}/>}
+      {toast&&<div style={{ position:"fixed", bottom:22, right:22, background:toast.type==="error"?"#C0392B":NAVY, color:WHITE, borderRadius:10, padding:"11px 18px", fontSize:13, fontWeight:700, zIndex:9999, boxShadow:"0 4px 20px rgba(0,0,0,0.2)", maxWidth:300 }}>{toast.msg}</div>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<AuthGate/>);
 </script>
 </body>
 </html>
